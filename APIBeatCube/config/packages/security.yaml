@@ -1,0 +1,23 @@
+security:
+    password_hashers:
+        App\Entity\Utilisateur:
+            algorithm: auto
+
+    providers:
+        utilisateurs:
+            entity:
+                class: App\Entity\Utilisateur
+                property: username
+
+    firewalls:
+        dev:
+            security: false
+
+        api:
+            pattern: ^/api
+            stateless: true
+            provider: utilisateurs
+
+    access_control:
+        - { path: ^/api/auth, roles: PUBLIC_ACCESS }
+        - { path: ^/api, roles: ROLE_USER }
