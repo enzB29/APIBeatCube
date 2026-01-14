@@ -3,7 +3,6 @@
 namespace App\Entity;
 
 use App\Repository\MusiqueRepository;
-use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: MusiqueRepository::class)]
@@ -23,19 +22,29 @@ class Musique
     #[ORM\Column]
     private ?int $year = null;
 
-    #[ORM\Column(length: 255)]
-    private ?string $pathToFile = null;
+    #[ORM\Column(length: 36, unique: true)]
+    private ?string $uuid = null;
 
+    /**
+     * @return int|null
+     */
     public function getId(): ?int
     {
         return $this->id;
     }
 
+    /**
+     * @return string|null
+     */
     public function getName(): ?string
     {
         return $this->name;
     }
 
+    /**
+     * @param string $name
+     * @return $this
+     */
     public function setName(string $name): static
     {
         $this->name = $name;
@@ -43,11 +52,18 @@ class Musique
         return $this;
     }
 
+    /**
+     * @return string|null
+     */
     public function getSinger(): ?string
     {
         return $this->singer;
     }
 
+    /**
+     * @param string $singer
+     * @return $this
+     */
     public function setSinger(string $singer): static
     {
         $this->singer = $singer;
@@ -55,11 +71,18 @@ class Musique
         return $this;
     }
 
+    /**
+     * @return int|null
+     */
     public function getYear(): ?int
     {
         return $this->year;
     }
 
+    /**
+     * @param int $year
+     * @return $this
+     */
     public function setYear(int $year): static
     {
         $this->year = $year;
@@ -67,14 +90,21 @@ class Musique
         return $this;
     }
 
-    public function getPathToFile(): ?string
+    /**
+     * @return string|null
+     */
+    public function getUuid(): ?string
     {
-        return $this->pathToFile;
+        return $this->uuid;
     }
 
-    public function setPathToFile(string $pathToFile): static
+    /**
+     * @param string $uuid
+     * @return $this
+     */
+    public function setUuid(string $uuid): static
     {
-        $this->pathToFile = $pathToFile;
+        $this->uuid = $uuid;
 
         return $this;
     }

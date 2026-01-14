@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Repository\UtilisateurMusiqueRepository;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: UtilisateurMusiqueRepository::class)]
@@ -13,62 +14,97 @@ class UtilisateurMusique
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(inversedBy: 'utilisateurMusiques')]
+    #[ORM\ManyToOne(targetEntity: Utilisateur::class)]
     #[ORM\JoinColumn(nullable: false)]
     private ?Utilisateur $utilisateur = null;
 
-    #[ORM\ManyToOne(inversedBy: 'utilisateurMusiques')]
+    #[ORM\ManyToOne(targetEntity: Musique::class)]
     #[ORM\JoinColumn(nullable: false)]
     private ?Musique $musique = null;
 
     #[ORM\Column]
     private ?int $score = null;
 
-    #[ORM\Column]
-    private ?\DateTime $dateAjout = null;
+    #[ORM\Column(type: Types::DATETIME_MUTABLE)]
+    private ?\DateTimeInterface $playedAt = null;
 
+    /**
+     * @return int|null
+     */
     public function getId(): ?int
     {
         return $this->id;
     }
 
+    /**
+     * @return Utilisateur|null
+     */
     public function getUtilisateur(): ?Utilisateur
     {
         return $this->utilisateur;
     }
 
-    public function setUtilisateur(?Utilisateur $utilisateur): void
+    /**
+     * @param Utilisateur|null $utilisateur
+     * @return $this
+     */
+    public function setUtilisateur(?Utilisateur $utilisateur): static
     {
         $this->utilisateur = $utilisateur;
+        return $this;
     }
 
+    /**
+     * @return Musique|null
+     */
     public function getMusique(): ?Musique
     {
         return $this->musique;
     }
 
-    public function setMusique(?Musique $musique): void
+    /**
+     * @param Musique|null $musique
+     * @return $this
+     */
+    public function setMusique(?Musique $musique): static
     {
         $this->musique = $musique;
+        return $this;
     }
 
+    /**
+     * @return int|null
+     */
     public function getScore(): ?int
     {
         return $this->score;
     }
 
-    public function setScore(int $score): void
+    /**
+     * @param int $score
+     * @return $this
+     */
+    public function setScore(int $score): static
     {
         $this->score = $score;
+        return $this;
     }
 
-    public function getDateAjout(): ?\DateTime
+    /**
+     * @return \DateTimeInterface|null
+     */
+    public function getPlayedAt(): ?\DateTimeInterface
     {
-        return $this->dateAjout;
+        return $this->playedAt;
     }
 
-    public function setDateAjout(\DateTime $dateAjout): void
+    /**
+     * @param \DateTimeInterface $playedAt
+     * @return $this
+     */
+    public function setPlayedAt(\DateTimeInterface $playedAt): static
     {
-        $this->dateAjout = $dateAjout;
+        $this->playedAt = $playedAt;
+        return $this;
     }
 }

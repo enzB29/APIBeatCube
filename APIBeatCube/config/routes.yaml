@@ -9,13 +9,3 @@
 
 controllers:
     resource: routing.controllers
-
-api_signin:
-    path: /api/auth/signin
-    controller: App\Controller\AuthController::signin
-    methods: POST
-
-api_login:
-    path: /api/auth/login
-    controller: App\Controller\AuthController::login
-    methods: POST

@@ -11,9 +11,39 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class MusiqueRepository extends ServiceEntityRepository
 {
+    /**
+     * @param ManagerRegistry $registry
+     */
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Musique::class);
+    }
+
+    /**
+     * @param Musique $entity
+     * @param bool $flush
+     * @return void
+     */
+    public function save(Musique $entity, bool $flush = false): void
+    {
+        $this->getEntityManager()->persist($entity);
+        if ($flush) {
+            $this->getEntityManager()->flush();
+        }
+    }
+
+    /**
+     * @param Musique $entity
+     * @param bool $flush
+     * @return void
+     */
+    public function remove(Musique $entity, bool $flush = false): void
+    {
+        $this->getEntityManager()->remove($entity);
+
+        if ($flush) {
+            $this->getEntityManager()->flush();
+        }
     }
 
     //    /**

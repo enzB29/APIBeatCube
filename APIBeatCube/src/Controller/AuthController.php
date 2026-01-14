@@ -15,6 +15,12 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/api/auth')]
 class AuthController extends AbstractController
 {
+    /**
+     * @param Request $request
+     * @param EntityManagerInterface $em
+     * @param UserPasswordHasherInterface $passwordHasher
+     * @return JsonResponse
+     */
     #[Route('/signin', name: 'api_signin', methods: ['POST'])]
     public function signin(Request $request, EntityManagerInterface $em, UserPasswordHasherInterface $passwordHasher): JsonResponse {
         $data = json_decode($request->getContent(), true);
@@ -61,37 +67,40 @@ class AuthController extends AbstractController
         ], 201);
     }
 
+    /**
+     * @param Request $request
+     * @param UtilisateurRepository $repo
+     * @param UserPasswordHasherInterface $hasher
+     * @param JwtService $jwt
+     * @return JsonResponse
+     */
     #[Route('/login', methods: ['POST'])]
     public function login(Request $request, UtilisateurRepository $repo, UserPasswordHasherInterface $hasher, JwtService $jwt): JsonResponse {
         $data = json_decode($request->getContent(), true);
 
-        $identifier = $data['identifier'] ?? null; // Peut être username OU email
+        $identifier = $data['identifier'] ?? null;
         $password = $data['password'] ?? null;
 
         if (!$identifier || !$password) {
             return $this->json(['error' => 'Identifier (username or email) and password required'], 400);
         }
 
-        // Détecter si c'est un email ou un username
         $user = null;
         if (filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
-            // C'est un email
             $user = $repo->findOneBy(['email' => $identifier]);
         } else {
-            // C'est un username
             $user = $repo->findOneBy(['username' => $identifier]);
         }
 
-        // Vérifier les credentials
         if (!$user || !$hasher->isPasswordValid($user, $password)) {
             return $this->json(['error' => 'Invalid credentials'], 401);
         }
 
-        // Générer le token
         $token = $jwt->generate([
             'id' => $user->getId(),
             'username' => $user->getUsername(),
             'email' => $user->getEmail(),
+            'roles' => $user->getRoles(),
         ]);
 
         return $this->json([
@@ -99,11 +108,17 @@ class AuthController extends AbstractController
             'user' => [
                 'id' => $user->getId(),
                 'username' => $user->getUsername(),
-                'email' => $user->getEmail()
+                'email' => $user->getEmail(),
+                'roles' => $user->getRoles()
             ]
         ]);
     }
 
+    /**
+     * @param Request $request
+     * @param JwtService $jwt
+     * @return JsonResponse
+     */
     #[Route('/logout', methods: ['POST'])]
     public function logout(Request $request, JwtService $jwt): JsonResponse {
         return $this->json([
@@ -111,6 +126,12 @@ class AuthController extends AbstractController
         ]);
     }
 
+    /**
+     * @param Request $request
+     * @param JwtService $jwt
+     * @param UtilisateurRepository $repo
+     * @return JsonResponse
+     */
     #[Route('/me', methods: ['GET'])]
     public function me(Request $request, JwtService $jwt, UtilisateurRepository $repo): JsonResponse {
         $authHeader = $request->headers->get('Authorization');
