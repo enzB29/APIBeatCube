@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Utilisateur;
 use App\Repository\UtilisateurRepository;
+use App\Service\BanService;
 use App\Service\JwtService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -72,10 +73,11 @@ class AuthController extends AbstractController
      * @param UtilisateurRepository $repo
      * @param UserPasswordHasherInterface $hasher
      * @param JwtService $jwt
+     * @param BanService $banService
      * @return JsonResponse
      */
     #[Route('/login', methods: ['POST'])]
-    public function login(Request $request, UtilisateurRepository $repo, UserPasswordHasherInterface $hasher, JwtService $jwt): JsonResponse {
+    public function login(Request $request, UtilisateurRepository $repo, UserPasswordHasherInterface $hasher, JwtService $jwt, BanService $banService): JsonResponse {
         $data = json_decode($request->getContent(), true);
 
         $identifier = $data['identifier'] ?? null;
@@ -94,6 +96,16 @@ class AuthController extends AbstractController
 
         if (!$user || !$hasher->isPasswordValid($user, $password)) {
             return $this->json(['error' => 'Invalid credentials'], 401);
+        }
+
+        $ban = $banService->getActiveBan($user);
+
+        if ($ban) {
+            return $this->json([
+                'error' => 'Compte banni',
+                'reason' => $ban->getReason(),
+                'bannedUntil' => $ban->getBannedUntil()?->format('Y-m-d H:i:s'),
+            ], 403);
         }
 
         $token = $jwt->generate([
