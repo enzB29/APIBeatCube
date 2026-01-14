@@ -100,7 +100,7 @@ class UtilisateurMusiqueService
         return array_map(function ($userMusique) {
             return [
                 'userId' => $userMusique->getUtilisateur()->getId(),
-                'pseudo' => $userMusique->getUtilisateur()->getPseudo(),
+                'pseudo' => $userMusique->getUtilisateur()->getUsername(),
                 'score' => $userMusique->getScore(),
             ];
         }, $scores);
