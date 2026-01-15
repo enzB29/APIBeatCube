@@ -1,10 +1,13 @@
 <?php
 namespace App\Controller;
 
-use App\Repository\MusiqueRepository;
+use App\Entity\UtilisateurMusique;
+use App\Repository\UtilisateurMusiqueRepository;
+use App\Repository\UtilisateurRepository;
 use App\Service\UtilisateurMusiqueService;
 use App\Service\JwtService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -88,5 +91,85 @@ class UtilisateurMusiqueController extends AbstractController
                 'message' => $e->getMessage()
             ], 500);
         }
+    }
+
+    #[Route('/myscores', methods: ['GET'])]
+    public function myScores(UtilisateurMusiqueRepository $repo, JwtService $jwt, Request $request): JsonResponse
+    {
+        $authHeader = $request->headers->get('Authorization');
+        if (!$authHeader || !preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
+            return $this->json(['error' => 'Token manquant'], 401);
+        }
+
+        $token = $matches[1];
+        $payload = $jwt->verify($token);
+
+        if (!$payload) {
+            return $this->json(['error' => 'Token invalide'], 401);
+        }
+
+        $id = $payload['id'];
+
+        $userMusique = $repo->findBy(['utilisateur' => $id]);
+
+        $result = array_map(function ($um) {
+            return [
+                'musique' => [
+                    'id' => $um->getMusique()->getId(),
+                    'uuid' => $um->getMusique()->getUuid(),
+                    'name' => $um->getMusique()->getName(),
+                ],
+                'score' => $um->getScore(),
+                'playedAt' => $um->getPlayedAt()?->format('Y-m-d H:i:s'),
+            ];
+        }, $userMusique);
+
+        return $this->json([
+            'scores' => $result,
+        ]);
+    }
+
+    #[Route('/admin/{userId}', methods: ['GET'])]
+    public function ScoresFromUserIdForAdmin(int $userId, Request $request, JwtService $jwt, UtilisateurMusiqueRepository $userMusicRepo): JsonResponse
+    {
+        // Vérifier le token
+        $authHeader = $request->headers->get('Authorization');
+        if (!$authHeader || !preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
+            return $this->json(['error' => 'Token manquant'], 401);
+        }
+
+        $token = $matches[1];
+        $payload = $jwt->verify($token);
+
+        if (!$payload) {
+            return $this->json(['error' => 'Token invalide'], 401);
+        }
+
+        // Vérifier si l'utilisateur a le rôle ROLE_ADMIN
+        $roles = $payload['roles'] ?? [];
+        if (!in_array('ROLE_ADMIN', $roles)) {
+            return $this->json(['error' => 'Accès refusé.'], 403);
+        }
+
+        $userMusique = $userMusicRepo->findBy(['utilisateur' => $userId]);
+        if (!$userMusique) {
+            return $this->json(['error' => 'L\'utilisateur n\'a pas effectué de parties.'], 404);
+        }
+
+        $result = array_map(function ($um) {
+            return [
+                'musique' => [
+                    'id' => $um->getMusique()->getId(),
+                    'uuid' => $um->getMusique()->getUuid(),
+                    'name' => $um->getMusique()->getName(),
+                ],
+                'score' => $um->getScore(),
+                'playedAt' => $um->getPlayedAt()?->format('Y-m-d H:i:s'),
+            ];
+        }, $userMusique);
+
+        return $this->json([
+            'scores' => $result,
+        ]);
     }
 }

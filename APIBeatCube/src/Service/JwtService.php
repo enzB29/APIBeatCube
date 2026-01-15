@@ -6,6 +6,7 @@ class JwtService
 {
     private string $secret = 'CHANGE_ME_SECRET_KEY';
 
+
     public function generate(array $payload, int $ttl = 3600): string
     {
         $header = base64_encode(json_encode(['alg' => 'HS256', 'typ' => 'JWT']));
