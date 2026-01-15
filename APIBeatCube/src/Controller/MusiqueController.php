@@ -2,9 +2,12 @@
 
 namespace App\Controller;
 
+use App\Repository\UtilisateurRepository;
 use App\Service\JwtService;
 use App\Service\MusiqueService;
+use App\Service\UploadService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -28,11 +31,24 @@ class MusiqueController extends AbstractController
     /**
      * @param Request $request
      * @param MusiqueService $musiqueService
+     * @param JwtService $jwt
+     * @param UtilisateurRepository $utilisateurRepository
      * @return Response
      */
     #[Route('/upload', name: 'musique_upload', methods: ['POST'])]
-    public function upload(Request $request, MusiqueService $musiqueService): Response
+    public function upload(Request $request, MusiqueService $musiqueService, JwtService $jwt, UtilisateurRepository $utilisateurRepository): Response
     {
+        // --- JWT ---
+        $authHeader = $request->headers->get('Authorization');
+        if (!$authHeader || !preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
+            return $this->json(['error' => 'Token manquant'], 401);
+        }
+
+        $payload = $jwt->verify($matches[1]);
+        if (!$payload) {
+            return $this->json(['error' => 'Token invalide'], 401);
+        }
+
         $file = $request->files->get('file');
         $name = $request->request->get('name');
         $singer = $request->request->get('singer');
@@ -48,12 +64,60 @@ class MusiqueController extends AbstractController
             return $this->json(['error' => 'name, singer et year sont requis et year doit être un entier'], 400);
         }
 
+        $user = $utilisateurRepository->findOneBy(['id' => $payload['id']]);
         try {
-            $result = $musiqueService->handleUpload($file, $name, $singer, (int)$year);
+            $result = $musiqueService->handleUpload($file, $name, $singer, (int)$year, $user);
+
             return $this->json($result);
         } catch (\Exception $e) {
             return $this->json(['error' => 'Erreur lors de l\'upload', 'exception' => $e->getMessage()], 500);
         }
+    }
+
+    #[Route('/admin/uploadBy/{userId}', name: 'music_uploadBy_UserId', methods: ['GET'])]
+    public function UploadByUserId(int $userId,Request $request, UploadService $uploadService, JwtService $jwt): Response
+    {
+        // Vérifier le token
+        $authHeader = $request->headers->get('Authorization');
+        if (!$authHeader || !preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
+            return $this->json(['error' => 'Token manquant'], 401);
+        }
+
+        $token = $matches[1];
+        $payload = $jwt->verify($token);
+
+        if (!$payload) {
+            return $this->json(['error' => 'Token invalide'], 401);
+        }
+
+        // Vérifier si l'utilisateur a le rôle ROLE_ADMIN
+        $roles = $payload['roles'] ?? [];
+        if (!in_array('ROLE_ADMIN', $roles)) {
+            return $this->json(['error' => 'Accès refusé.'], 403);
+        }
+
+        $uploads = $uploadService->getUploadsByUserId($userId);
+
+        $result = array_map(function ($um) {
+            return [
+                'musique' => [
+                    'id' => $um->getMusique()->getId(),
+                    'uuid' => $um->getMusique()->getUuid(),
+                    'name' => $um->getMusique()->getName(),
+                    'singer' => $um->getMusique()->getSinger(),
+                ],
+                'utilisateur' => [
+                    'id' => $um->getUtilisateur()->getId(),
+                    'username' => $um->getUtilisateur()->getUsername(),
+                    'email' => $um->getUtilisateur()->getEmail(),
+                ],
+                'uploadAt' => $um->getUploadAt()?->format('Y-m-d H:i:s'),
+            ];
+        }, $uploads);
+
+        return $this->json([
+            'uploads' => $result,
+        ]);
     }
 
     /**

@@ -3,6 +3,7 @@
 namespace App\Service;
 
 use App\Entity\Musique;
+use App\Entity\Utilisateur;
 use App\Repository\MusiqueRepository;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Uid\Uuid;
@@ -15,7 +16,8 @@ class MusiqueService
      */
     public function __construct(
         private MusiqueRepository $musiqueRepository,
-        private string $tmpDir
+        private string $tmpDir,
+        private UploadService $uploadService
     ) {}
 
     /**
@@ -23,52 +25,54 @@ class MusiqueService
      * @param string $name
      * @param string $singer
      * @param int $year
+     * @param Utilisateur $user
      * @return array
      */
-    public function handleUpload(UploadedFile $file, string $name, string $singer, int $year): array
-    {
-        // Vérifier si la musique existe déjà (même name, singer, year)
-        $existingMusique = $this->musiqueRepository->findOneBy([
+    public function handleUpload(
+        UploadedFile $file,
+        string $name,
+        string $singer,
+        int $year,
+        Utilisateur $user
+    ): array {
+        // Générer UUID pour le fichier (toujours unique)
+        $uuid = Uuid::v4()->toRfc4122();
+        $filename = $uuid . '.mp3';
+
+        // Déplacer le fichier
+        $file->move($this->tmpDir, $filename);
+
+        // Vérifier si la musique existe déjà
+        $musique = $this->musiqueRepository->findOneBy([
             'name' => $name,
             'singer' => $singer,
             'year' => $year
         ]);
 
-        if ($existingMusique) {
-            // La musique existe déjà, on upload quand même le fichier
-            $uuid = Uuid::v4()->toRfc4122();
-            $filename = $uuid . '.mp3';
-            $file->move($this->tmpDir, $filename);
+        $isNewMusique = false;
 
-            return [
-                'fileId' => $filename,
-                'uuid' => $uuid,
-                'musiqueId' => $existingMusique->getId(),
-                'message' => 'Musique existante utilisee, fichier upload avec nouvel UUID'
-            ];
+        if (!$musique) {
+            // La musique n'existe pas → création
+            $musique = new Musique();
+            $musique->setName($name);
+            $musique->setSinger($singer);
+            $musique->setYear($year);
+            $musique->setUuid($uuid);
+
+            $this->musiqueRepository->save($musique, true);
+            $isNewMusique = true;
         }
 
-        // La musique n'existe pas, on la crée
-        $uuid = Uuid::v4()->toRfc4122();
-        $filename = $uuid . '.mp3';
-
-        // Déplacer le fichier dans var/tmp_music
-        $file->move($this->tmpDir, $filename);
-
-        // Créer l'entité Musique et persister via le repository
-        $musique = new Musique();
-        $musique->setName($name);
-        $musique->setSinger($singer);
-        $musique->setYear($year);
-        $musique->setUuid($uuid);
-
-        $this->musiqueRepository->save($musique, true);
+        // 🔹 LOG UPLOAD (TOUJOURS)
+        $this->uploadService->logUpload($user, $musique);
 
         return [
             'fileId' => $filename,
             'uuid' => $uuid,
             'musiqueId' => $musique->getId(),
-            'message' => 'Nouvelle musique créée'
+            'message' => $isNewMusique
+                ? 'Nouvelle musique créée'
+                : 'Musique existante utilisée, fichier upload avec nouvel UUID'
         ];
     }
 
