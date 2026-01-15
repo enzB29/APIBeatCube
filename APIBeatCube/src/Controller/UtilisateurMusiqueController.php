@@ -12,7 +12,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
-#[Route('/api/score')]
+#[Route('/api')]
 class UtilisateurMusiqueController extends AbstractController
 {
     /**
@@ -21,7 +21,7 @@ class UtilisateurMusiqueController extends AbstractController
      * @param UtilisateurMusiqueService $utilisateurMusiqueService
      * @return Response
      */
-    #[Route('/save', name: 'score_save', methods: ['POST'])]
+    #[Route('/score/save', name: 'score_save', methods: ['POST'])]
     public function save(Request $request, JwtService $jwt, UtilisateurMusiqueService $utilisateurMusiqueService): Response
     {
         // Vérifier le token JWT
@@ -70,7 +70,7 @@ class UtilisateurMusiqueController extends AbstractController
      * @param UtilisateurMusiqueService $utilisateurMusiqueService
      * @return Response
      */
-    #[Route('/top/{musiqueUuid}/{limit}', name: 'score_top', methods: ['GET'])]
+    #[Route('/score/top/{musiqueUuid}/{limit}', name: 'score_top', methods: ['GET'])]
     public function topScores(string $musiqueUuid, int $limit, UtilisateurMusiqueService $utilisateurMusiqueService): Response
     {
         if ($limit <= 0) {
@@ -93,7 +93,7 @@ class UtilisateurMusiqueController extends AbstractController
         }
     }
 
-    #[Route('/myscores', methods: ['GET'])]
+    #[Route('/score/myscores', methods: ['GET'])]
     public function myScores(UtilisateurMusiqueRepository $repo, JwtService $jwt, Request $request): JsonResponse
     {
         $authHeader = $request->headers->get('Authorization');
@@ -129,7 +129,7 @@ class UtilisateurMusiqueController extends AbstractController
         ]);
     }
 
-    #[Route('/admin/{userId}', methods: ['GET'])]
+    #[Route('/score/admin/{userId}', methods: ['GET'])]
     public function ScoresFromUserIdForAdmin(int $userId, Request $request, JwtService $jwt, UtilisateurMusiqueRepository $userMusicRepo): JsonResponse
     {
         // Vérifier le token
@@ -170,6 +170,30 @@ class UtilisateurMusiqueController extends AbstractController
 
         return $this->json([
             'scores' => $result,
+        ]);
+    }
+
+    #[Route('/games/my-number-of-games', methods: ['GET'])]
+    public function NumberOfGames(Request $request, JwtService $jwt, UtilisateurMusiqueService $userMusicService): JsonResponse
+    {
+        $authHeader = $request->headers->get('Authorization');
+        if (!$authHeader || !preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
+            return $this->json(['error' => 'Token manquant'], 401);
+        }
+
+        $token = $matches[1];
+        $payload = $jwt->verify($token);
+
+        if (!$payload) {
+            return $this->json(['error' => 'Token invalide'], 401);
+        }
+
+        $id = $payload['id'];
+
+        $numberOfGame = count($userMusicService->getUtilisateurMusiqueByUserId($id));
+
+        return $this->json([
+            'numberOfGame' => $numberOfGame,
         ]);
     }
 }

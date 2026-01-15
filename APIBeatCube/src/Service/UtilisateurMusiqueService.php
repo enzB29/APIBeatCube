@@ -105,4 +105,9 @@ class UtilisateurMusiqueService
             ];
         }, $scores);
     }
+
+    public function getUtilisateurMusiqueByUserId(int $userId): array
+    {
+        return $this->utilisateurMusiqueRepository->findBy(['utilisateur' => $userId]);
+    }
 }
