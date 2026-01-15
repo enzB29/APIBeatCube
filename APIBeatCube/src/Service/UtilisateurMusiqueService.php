@@ -110,4 +110,14 @@ class UtilisateurMusiqueService
     {
         return $this->utilisateurMusiqueRepository->findBy(['utilisateur' => $userId]);
     }
+
+    public function getBestScoreByUserId(int $userId, int $limit = 10): array
+    {
+        return $this->utilisateurMusiqueRepository->findBestScoresByUser($userId, $limit);
+    }
+
+    public function getByUserId(int $userId): array
+    {
+        return $this->utilisateurMusiqueRepository->findBy(['utilisateur' => $userId]);
+    }
 }
