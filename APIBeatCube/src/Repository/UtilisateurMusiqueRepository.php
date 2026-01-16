@@ -70,7 +70,24 @@ class UtilisateurMusiqueRepository extends ServiceEntityRepository
             ->andWhere('um.musique = :musiqueId')
             ->setParameter('musiqueId', $musiqueId)
             ->orderBy('um.accuracy', 'DESC')
-            ->orderBy('um.score', 'DESC')
+            ->addOrderBy('um.score', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @param int $musiqueId
+     * @param int $limit
+     * @return array
+     */
+    public function findBestFullComboByMusique(int $musiqueId, int $limit = 10): array
+    {
+        return $this->createQueryBuilder('um')
+            ->andWhere('um.musique = :musiqueId')
+            ->setParameter('musiqueId', $musiqueId)
+            ->orderBy('um.fullCombo', 'DESC')
+            ->addOrderBy('um.score', 'DESC')
             ->setMaxResults($limit)
             ->getQuery()
             ->getResult();

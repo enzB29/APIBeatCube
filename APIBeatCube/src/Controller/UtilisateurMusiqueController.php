@@ -103,7 +103,7 @@ class UtilisateurMusiqueController extends AbstractController
         }
     }
 
-    #[Route('/accuracy/top/{musiqueUuid}/{limit}', name: 'score_top', methods: ['GET'])]
+    #[Route('/accuracy/top/{musiqueUuid}/{limit}', name: 'accuracy_top', methods: ['GET'])]
     public function topAccuracy(string $musiqueUuid, int $limit, UtilisateurMusiqueService $utilisateurMusiqueService): Response
     {
         if ($limit <= 0) {
@@ -116,7 +116,30 @@ class UtilisateurMusiqueController extends AbstractController
             return $this->json([
                 'musiqueUuid' => $musiqueUuid,
                 'limit' => $limit,
-                'accuracy' => $accuracy,
+                'scores' => $accuracy,
+            ]);
+        } catch (\Exception $e) {
+            return $this->json([
+                'error' => 'Erreur lors de la récupération du classement',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    #[Route('/full-combo/top/{musiqueUuid}/{limit}', name: 'full_combo_top', methods: ['GET'])]
+    public function topFullCombo(string $musiqueUuid, int $limit, UtilisateurMusiqueService $utilisateurMusiqueService): Response
+    {
+        if ($limit <= 0) {
+            return $this->json(['error' => 'Le nombre de joueurs demandé doit être supérieur à 0'], 400);
+        }
+
+        try {
+            $accuracy = $utilisateurMusiqueService->getTopFullComboByMusique($musiqueUuid, $limit);
+
+            return $this->json([
+                'musiqueUuid' => $musiqueUuid,
+                'limit' => $limit,
+                'scores' => $accuracy,
             ]);
         } catch (\Exception $e) {
             return $this->json([

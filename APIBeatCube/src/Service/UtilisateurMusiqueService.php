@@ -106,6 +106,8 @@ class UtilisateurMusiqueService
                 'userId' => $userMusique->getUtilisateur()->getId(),
                 'pseudo' => $userMusique->getUtilisateur()->getUsername(),
                 'score' => $userMusique->getScore(),
+                'accuracy' => $userMusique->getAccuracy(),
+                'fullCombo' => $userMusique->getFullCombo(),
             ];
         }, $scores);
     }
@@ -127,6 +129,31 @@ class UtilisateurMusiqueService
             return [
                 'userId' => $userMusique->getUtilisateur()->getId(),
                 'pseudo' => $userMusique->getUtilisateur()->getUsername(),
+                'accuracy' => $userMusique->getAccuracy(),
+                'score' => $userMusique->getScore(),
+                'fullCombo' => $userMusique->getFullCombo(),
+            ];
+        }, $accuracy);
+    }
+
+    public function getTopFullComboByMusique(string $musiqueUuid, int $limit): array
+    {
+        // 1️⃣ Trouver la musique via son UUID
+        $musique = $this->musiqueRepository->findOneBy(['uuid' => $musiqueUuid]);
+
+        if (!$musique) {
+            throw new \Exception('Musique introuvable');
+        }
+
+        // 2️⃣ Récupérer les meilleurs scores
+        $accuracy = $this->utilisateurMusiqueRepository->findBestFullComboByMusique($musique->getId(), $limit);
+
+        // 3️⃣ Formatter la réponse (important pour l’API)
+        return array_map(function ($userMusique) {
+            return [
+                'userId' => $userMusique->getUtilisateur()->getId(),
+                'pseudo' => $userMusique->getUtilisateur()->getUsername(),
+                'fullCombo' => $userMusique->getFullCombo(),
                 'accuracy' => $userMusique->getAccuracy(),
                 'score' => $userMusique->getScore(),
             ];
