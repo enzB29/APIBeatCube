@@ -42,17 +42,27 @@ class UtilisateurMusiqueController extends AbstractController
 
         $musiqueUuid = $data['musiqueUuid'] ?? null;
         $score = $data['score'] ?? null;
+        $accuracy = $data['accuracy'] ?? null;
+        $fullCombo = $data['fullCombo'] ?? null;
+
 
         // Validation
-        if (!$musiqueUuid || !is_numeric($score) || $score < 0) {
-            return $this->json(['error' => 'musiqueUuid et score (entier positif) sont requis'], 400);
+        if (
+            !$musiqueUuid ||
+            !is_numeric($score) || $score < 0 ||
+            !is_numeric($accuracy) || $accuracy < 0 || $accuracy > 100 ||
+            !is_numeric($fullCombo) || $fullCombo < 0
+        ) {
+            return $this->json([
+                'error' => 'musiqueUuid, score, accuracy (0-100) et fullCombo sont requis'
+            ], 400);
         }
 
         // L'userId vient du token JWT (sécurisé)
         $userId = $payload['id'];
 
         try {
-            $result = $utilisateurMusiqueService->saveScore($userId, $musiqueUuid, (int)$score);
+            $result = $utilisateurMusiqueService->saveScore($userId, $musiqueUuid, (int)$score, $accuracy, $fullCombo);
 
             if (!$result['success']) {
                 return $this->json($result, 404);
@@ -93,6 +103,35 @@ class UtilisateurMusiqueController extends AbstractController
         }
     }
 
+    #[Route('/accuracy/top/{musiqueUuid}/{limit}', name: 'score_top', methods: ['GET'])]
+    public function topAccuracy(string $musiqueUuid, int $limit, UtilisateurMusiqueService $utilisateurMusiqueService): Response
+    {
+        if ($limit <= 0) {
+            return $this->json(['error' => 'Le nombre de joueurs demandé doit être supérieur à 0'], 400);
+        }
+
+        try {
+            $accuracy = $utilisateurMusiqueService->getTopAccuracyByMusique($musiqueUuid, $limit);
+
+            return $this->json([
+                'musiqueUuid' => $musiqueUuid,
+                'limit' => $limit,
+                'accuracy' => $accuracy,
+            ]);
+        } catch (\Exception $e) {
+            return $this->json([
+                'error' => 'Erreur lors de la récupération du classement',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * @param UtilisateurMusiqueRepository $repo
+     * @param JwtService $jwt
+     * @param Request $request
+     * @return JsonResponse
+     */
     #[Route('/score/myscores', methods: ['GET'])]
     public function myScores(UtilisateurMusiqueRepository $repo, JwtService $jwt, Request $request): JsonResponse
     {
@@ -120,6 +159,8 @@ class UtilisateurMusiqueController extends AbstractController
                     'name' => $um->getMusique()->getName(),
                 ],
                 'score' => $um->getScore(),
+                'accuracy' => $um->getAccuracy(),
+                'fullCombo' => $um->getFullCombo(),
                 'playedAt' => $um->getPlayedAt()?->format('Y-m-d H:i:s'),
             ];
         }, $userMusique);
@@ -129,6 +170,13 @@ class UtilisateurMusiqueController extends AbstractController
         ]);
     }
 
+    /**
+     * @param int $userId
+     * @param Request $request
+     * @param JwtService $jwt
+     * @param UtilisateurMusiqueRepository $userMusicRepo
+     * @return JsonResponse
+     */
     #[Route('/score/admin/{userId}', methods: ['GET'])]
     public function ScoresFromUserIdForAdmin(int $userId, Request $request, JwtService $jwt, UtilisateurMusiqueRepository $userMusicRepo): JsonResponse
     {
@@ -164,6 +212,8 @@ class UtilisateurMusiqueController extends AbstractController
                     'name' => $um->getMusique()->getName(),
                 ],
                 'score' => $um->getScore(),
+                'accuracy' => $um->getAccuracy(),
+                'fullCombo' => $um->getFullCombo(),
                 'playedAt' => $um->getPlayedAt()?->format('Y-m-d H:i:s'),
             ];
         }, $userMusique);

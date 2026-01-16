@@ -64,6 +64,18 @@ class UtilisateurMusiqueRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    public function findBestAccuracyByMusique(int $musiqueId, int $limit = 10): array
+    {
+        return $this->createQueryBuilder('um')
+            ->andWhere('um.musique = :musiqueId')
+            ->setParameter('musiqueId', $musiqueId)
+            ->orderBy('um.accuracy', 'DESC')
+            ->orderBy('um.score', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
     /**
      * @param int $userId
      * @param int $musiqueId

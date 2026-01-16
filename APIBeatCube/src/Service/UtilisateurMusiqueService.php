@@ -26,9 +26,11 @@ class UtilisateurMusiqueService
      * @param int $userId
      * @param string $musiqueUuid
      * @param int $score
+     * @param float $accuracy
+     * @param int $fullCombo
      * @return array
      */
-    public function saveScore(int $userId, string $musiqueUuid, int $score): array
+    public function saveScore(int $userId, string $musiqueUuid, int $score, float $accuracy, int $fullCombo): array
     {
         // Récupérer l'utilisateur
         $utilisateur = $this->utilisateurRepository->find($userId);
@@ -54,6 +56,8 @@ class UtilisateurMusiqueService
         $utilisateurMusique->setMusique($musique);
         $utilisateurMusique->setScore($score);
         $utilisateurMusique->setPlayedAt(new \DateTime());
+        $utilisateurMusique->setAccuracy($accuracy);
+        $utilisateurMusique->setFullCombo($fullCombo);
 
         $this->utilisateurMusiqueRepository->save($utilisateurMusique, true);
 
@@ -104,6 +108,29 @@ class UtilisateurMusiqueService
                 'score' => $userMusique->getScore(),
             ];
         }, $scores);
+    }
+
+    public function getTopAccuracyByMusique(string $musiqueUuid, int $limit): array
+    {
+        // 1️⃣ Trouver la musique via son UUID
+        $musique = $this->musiqueRepository->findOneBy(['uuid' => $musiqueUuid]);
+
+        if (!$musique) {
+            throw new \Exception('Musique introuvable');
+        }
+
+        // 2️⃣ Récupérer les meilleurs scores
+        $accuracy = $this->utilisateurMusiqueRepository->findBestAccuracyByMusique($musique->getId(), $limit);
+
+        // 3️⃣ Formatter la réponse (important pour l’API)
+        return array_map(function ($userMusique) {
+            return [
+                'userId' => $userMusique->getUtilisateur()->getId(),
+                'pseudo' => $userMusique->getUtilisateur()->getUsername(),
+                'accuracy' => $userMusique->getAccuracy(),
+                'score' => $userMusique->getScore(),
+            ];
+        }, $accuracy);
     }
 
     public function getUtilisateurMusiqueByUserId(int $userId): array

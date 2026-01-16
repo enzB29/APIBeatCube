@@ -28,6 +28,12 @@ class UtilisateurMusique
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private ?\DateTimeInterface $playedAt = null;
 
+    #[ORM\Column]
+    private ?float $accuracy = null;
+
+    #[ORM\Column]
+    private ?int $fullCombo = null;
+
     /**
      * @return int|null
      */
@@ -105,6 +111,30 @@ class UtilisateurMusique
     public function setPlayedAt(\DateTimeInterface $playedAt): static
     {
         $this->playedAt = $playedAt;
+        return $this;
+    }
+
+    public function getAccuracy(): ?float
+    {
+        return $this->accuracy;
+    }
+
+    public function setAccuracy(float $accuracy): static
+    {
+        $this->accuracy = $accuracy;
+
+        return $this;
+    }
+
+    public function getFullCombo(): ?int
+    {
+        return $this->fullCombo;
+    }
+
+    public function setFullCombo(int $fullCombo): static
+    {
+        $this->fullCombo = $fullCombo;
+
         return $this;
     }
 }
