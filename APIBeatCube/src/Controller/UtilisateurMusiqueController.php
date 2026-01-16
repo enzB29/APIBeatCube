@@ -1,7 +1,6 @@
 <?php
 namespace App\Controller;
 
-use App\Repository\UtilisateurMusiqueRepository;
 use App\Service\UtilisateurMusiqueService;
 use App\Service\JwtService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -101,6 +100,12 @@ class UtilisateurMusiqueController extends AbstractController
         }
     }
 
+    /**
+     * @param string $musiqueUuid
+     * @param int $limit
+     * @param UtilisateurMusiqueService $utilisateurMusiqueService
+     * @return Response
+     */
     #[Route('/accuracy/top/{musiqueUuid}/{limit}', name: 'accuracy_top', methods: ['GET'])]
     public function topAccuracy(string $musiqueUuid, int $limit, UtilisateurMusiqueService $utilisateurMusiqueService): Response
     {
@@ -124,6 +129,12 @@ class UtilisateurMusiqueController extends AbstractController
         }
     }
 
+    /**
+     * @param string $musiqueUuid
+     * @param int $limit
+     * @param UtilisateurMusiqueService $utilisateurMusiqueService
+     * @return Response
+     */
     #[Route('/full-combo/top/{musiqueUuid}/{limit}', name: 'full_combo_top', methods: ['GET'])]
     public function topFullCombo(string $musiqueUuid, int $limit, UtilisateurMusiqueService $utilisateurMusiqueService): Response
     {
@@ -148,79 +159,14 @@ class UtilisateurMusiqueController extends AbstractController
     }
 
     /**
-     * @param UtilisateurMusiqueRepository $repo
-     * @param JwtService $jwt
-     * @param Request $request
-     * @return JsonResponse
-     */
-    #[Route('/score/myscores', methods: ['GET'])]
-    public function myScores(UtilisateurMusiqueRepository $repo, JwtService $jwt, Request $request): JsonResponse
-    {
-        $authHeader = $request->headers->get('Authorization');
-        if (!$authHeader || !preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
-            return $this->json(['error' => 'Token manquant'], 401);
-        }
-
-        $token = $matches[1];
-        $payload = $jwt->verify($token);
-
-        if (!$payload) {
-            return $this->json(['error' => 'Token invalide'], 401);
-        }
-
-        $id = $payload['id'];
-
-        $userMusique = $repo->findBy(['utilisateur' => $id]);
-
-        $result = array_map(function ($um) {
-            return [
-                'musique' => [
-                    'id' => $um->getMusique()->getId(),
-                    'uuid' => $um->getMusique()->getUuid(),
-                    'name' => $um->getMusique()->getName(),
-                ],
-                'score' => $um->getScore(),
-                'accuracy' => $um->getAccuracy(),
-                'fullCombo' => $um->getFullCombo(),
-                'playedAt' => $um->getPlayedAt()?->format('Y-m-d H:i:s'),
-            ];
-        }, $userMusique);
-
-        return $this->json([
-            'scores' => $result,
-        ]);
-    }
-
-    /**
      * @param int $userId
-     * @param Request $request
-     * @param JwtService $jwt
-     * @param UtilisateurMusiqueRepository $userMusicRepo
+     * @param UtilisateurMusiqueService $userMusicService
      * @return JsonResponse
      */
-    #[Route('/score/admin/{userId}', methods: ['GET'])]
-    public function ScoresFromUserIdForAdmin(int $userId, Request $request, JwtService $jwt, UtilisateurMusiqueRepository $userMusicRepo): JsonResponse
+    #[Route('/score/{userId}', methods: ['GET'])]
+    public function ScoresFromUserId(int $userId, UtilisateurMusiqueService $userMusicService): JsonResponse
     {
-        // Vérifier le token
-        $authHeader = $request->headers->get('Authorization');
-        if (!$authHeader || !preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
-            return $this->json(['error' => 'Token manquant'], 401);
-        }
-
-        $token = $matches[1];
-        $payload = $jwt->verify($token);
-
-        if (!$payload) {
-            return $this->json(['error' => 'Token invalide'], 401);
-        }
-
-        // Vérifier si l'utilisateur a le rôle ROLE_ADMIN
-        $roles = $payload['roles'] ?? [];
-        if (!in_array('ROLE_ADMIN', $roles)) {
-            return $this->json(['error' => 'Accès refusé.'], 403);
-        }
-
-        $userMusique = $userMusicRepo->findBy(['utilisateur' => $userId]);
+        $userMusique = $userMusicService->getByUserId($userId);
         if (!$userMusique) {
             return $this->json(['error' => 'L\'utilisateur n\'a pas effectué de parties.'], 404);
         }
@@ -245,29 +191,14 @@ class UtilisateurMusiqueController extends AbstractController
     }
 
     /**
-     * @param Request $request
-     * @param JwtService $jwt
+     * @param int $userId
      * @param UtilisateurMusiqueService $userMusicService
      * @return JsonResponse
      */
-    #[Route('/games/my-number-of-games', methods: ['GET'])]
-    public function NumberOfGames(Request $request, JwtService $jwt, UtilisateurMusiqueService $userMusicService): JsonResponse
+    #[Route('/games/number-of-games/{userId}', methods: ['GET'])]
+    public function NumberOfGames(int $userId, UtilisateurMusiqueService $userMusicService): JsonResponse
     {
-        $authHeader = $request->headers->get('Authorization');
-        if (!$authHeader || !preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
-            return $this->json(['error' => 'Token manquant'], 401);
-        }
-
-        $token = $matches[1];
-        $payload = $jwt->verify($token);
-
-        if (!$payload) {
-            return $this->json(['error' => 'Token invalide'], 401);
-        }
-
-        $id = $payload['id'];
-
-        $numberOfGame = count($userMusicService->getUtilisateurMusiqueByUserId($id));
+        $numberOfGame = count($userMusicService->getUtilisateurMusiqueByUserId($userId));
 
         return $this->json([
             'numberOfGame' => $numberOfGame,
@@ -275,67 +206,13 @@ class UtilisateurMusiqueController extends AbstractController
     }
 
     /**
-     * @param Request $request
-     * @param JwtService $jwt
+     * @param int $userId
      * @param UtilisateurMusiqueService $userMusicService
      * @return JsonResponse
      */
-    #[Route('/games/my-best-scores', methods: ['GET'])]
-    public function BestScore(Request $request, JwtService $jwt, UtilisateurMusiqueService $userMusicService): JsonResponse
-    {
-        $authHeader = $request->headers->get('Authorization');
-        if (!$authHeader || !preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
-            return $this->json(['error' => 'Token manquant'], 401);
-        }
-
-        $token = $matches[1];
-        $payload = $jwt->verify($token);
-
-        if (!$payload) {
-            return $this->json(['error' => 'Token invalide'], 401);
-        }
-
-        $id = $payload['id'];
-        $userMusique = $userMusicService->getBestScoreByUserId($id);
-
-        $result = array_map(function ($um) {
-            return [
-                'musique' => [
-                    'id' => $um->getMusique()->getId(),
-                    'uuid' => $um->getMusique()->getUuid(),
-                    'name' => $um->getMusique()->getName(),
-                ],
-                'score' => $um->getScore(),
-                'playedAt' => $um->getPlayedAt()?->format('Y-m-d H:i:s'),
-            ];
-        }, $userMusique);
-
-        return $this->json([
-            'scores' => $result,
-        ]);
-    }
-
     #[Route('/games/best-scores/{userId}', methods: ['GET'])]
-    public function BestScoreFromUserId(int $userId, Request $request, JwtService $jwt, UtilisateurMusiqueService $userMusicService): JsonResponse
+    public function BestScoreFromUserId(int $userId, UtilisateurMusiqueService $userMusicService): JsonResponse
     {
-        $authHeader = $request->headers->get('Authorization');
-        if (!$authHeader || !preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
-            return $this->json(['error' => 'Token manquant'], 401);
-        }
-
-        $token = $matches[1];
-        $payload = $jwt->verify($token);
-
-        if (!$payload) {
-            return $this->json(['error' => 'Token invalide'], 401);
-        }
-
-        // Vérifier si l'utilisateur a le rôle ROLE_ADMIN
-        $roles = $payload['roles'] ?? [];
-        if (!in_array('ROLE_ADMIN', $roles)) {
-            return $this->json(['error' => 'Accès refusé.'], 403);
-        }
-
         $userMusique = $userMusicService->getBestScoreByUserId($userId);
 
         $result = array_map(function ($um) {
@@ -360,6 +237,11 @@ class UtilisateurMusiqueController extends AbstractController
         ]);
     }
 
+    /**
+     * @param int $userId
+     * @param UtilisateurMusiqueService $utilisateurMusiqueService
+     * @return JsonResponse
+     */
     #[Route('/games/average-accuracy/{userId}', methods: ['GET'])]
     public function AverageAccuracyByUserId(int $userId, UtilisateurMusiqueService $utilisateurMusiqueService) : JsonResponse
     {

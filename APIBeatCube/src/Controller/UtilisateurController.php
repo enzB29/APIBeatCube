@@ -14,21 +14,8 @@ use Symfony\Component\Routing\Attribute\Route;
 class UtilisateurController extends AbstractController
 {
     #[Route('/allusers', methods: ['GET'])]
-    public function AllUsers(Request $request, JwtService $jwt, UtilisateurRepository $repo): JsonResponse
+    public function AllUsers(UtilisateurRepository $repo): JsonResponse
     {
-        $authHeader = $request->headers->get('Authorization');
-
-        if (!$authHeader || !preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
-            return $this->json(['error' => 'Token missing'], 401);
-        }
-
-        $token = $matches[1];
-        $payload = $jwt->verify($token);
-
-        if (!$payload) {
-            return $this->json(['error' => 'Invalid token'], 401);
-        }
-
         $users = $repo->findAll();
 
         $userToReturn = [];
