@@ -174,4 +174,24 @@ class UtilisateurMusiqueService
     {
         return $this->utilisateurMusiqueRepository->findBy(['utilisateur' => $userId]);
     }
+
+    public function getAverageAccuracyByUserId(int $userId): float
+    {
+        $scores = $this->utilisateurMusiqueRepository->findBy([
+            'utilisateur' => $userId
+        ]);
+
+        if (count($scores) === 0) {
+            return 0.0;
+        }
+
+        $totalAccuracy = 0;
+
+        foreach ($scores as $score) {
+            $totalAccuracy += $score->getAccuracy();
+        }
+
+        return $totalAccuracy / count($scores);
+    }
+
 }

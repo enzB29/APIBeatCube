@@ -1,9 +1,7 @@
 <?php
 namespace App\Controller;
 
-use App\Entity\UtilisateurMusique;
 use App\Repository\UtilisateurMusiqueRepository;
-use App\Repository\UtilisateurRepository;
 use App\Service\UtilisateurMusiqueService;
 use App\Service\JwtService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -359,6 +357,14 @@ class UtilisateurMusiqueController extends AbstractController
 
         return $this->json([
             'scores' => $result,
+        ]);
+    }
+
+    #[Route('/games/average-accuracy/{userId}', methods: ['GET'])]
+    public function AverageAccuracyByUserId(int $userId, UtilisateurMusiqueService $utilisateurMusiqueService) : JsonResponse
+    {
+        return $this->json([
+            'averageAccuracy' => $utilisateurMusiqueService->getAverageAccuracyByUserId($userId),
         ]);
     }
 }
