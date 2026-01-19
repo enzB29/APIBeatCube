@@ -262,4 +262,17 @@ class UtilisateurMusiqueController extends AbstractController
             'nomberFullCombo' => $utilisateurMusiqueService->getNumberOfFullComboByUserId($userId),
         ]);
     }
+
+    /**
+     * @param int $userId
+     * @param UtilisateurMusiqueService $utilisateurMusiqueService
+     * @return JsonResponse
+     */
+    #[Route('/games/total-score/{userId}', methods: ['GET'])]
+    public function TotalScoreByUserId(int $userId, UtilisateurMusiqueService $utilisateurMusiqueService) : JsonResponse
+    {
+        return $this->json([
+            'totalScore' => $utilisateurMusiqueService->getTotalScoreByUserId($userId),
+        ]);
+    }
 }

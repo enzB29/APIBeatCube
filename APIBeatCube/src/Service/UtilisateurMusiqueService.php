@@ -237,4 +237,27 @@ class UtilisateurMusiqueService
         return $totalFullCombo;
     }
 
+    /**
+     * @param int $userId
+     * @return int
+     */
+    public function getTotalScoreByUserId(int $userId): int
+    {
+        $scores = $this->utilisateurMusiqueRepository->findBy([
+            'utilisateur' => $userId
+        ]);
+
+        if (count($scores) === 0) {
+            return 0;
+        }
+
+        $totalScore = 0;
+
+        foreach ($scores as $score) {
+            $totalScore += $score->getScore();
+        }
+
+        return $totalScore;
+    }
+
 }
