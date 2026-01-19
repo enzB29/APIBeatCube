@@ -260,4 +260,67 @@ class UtilisateurMusiqueService
         return $totalScore;
     }
 
+
+    /**
+     * Récupère le classement global de tous les utilisateurs
+     */
+    public function getGlobalLeaderboard(int $limit = 100): array
+    {
+        $ranking = $this->utilisateurMusiqueRepository->getGlobalRanking();
+
+        $leaderboard = [];
+        $position = 1;
+
+        foreach (array_slice($ranking, 0, $limit) as $entry) {
+            $leaderboard[] = [
+                'rank' => $position,
+                'userId' => (int) $entry['userId'],
+                'username' => $entry['username'],
+                'totalScore' => (int) $entry['totalScore'],
+                'gamesPlayed' => (int) $entry['gamesPlayed']
+            ];
+
+            $position++;
+        }
+
+        return $leaderboard;
+    }
+
+    /**
+     * Récupère le classement d'un utilisateur spécifique
+     */
+    public function getUserRanking(int $userId): array
+    {
+        $utilisateur = $this->utilisateurRepository->find($userId);
+
+        if (!$utilisateur) {
+            return [
+                'success' => false,
+                'error' => 'Utilisateur non trouvé'
+            ];
+        }
+
+        $rankData = $this->utilisateurMusiqueRepository->getUserGlobalRank($userId);
+
+        if (!$rankData) {
+            return [
+                'success' => true,
+                'userId' => $userId,
+                'username' => $utilisateur->getUsername(),
+                'rank' => null,
+                'totalScore' => 0,
+                'gamesPlayed' => 0,
+                'message' => 'Aucune partie jouée'
+            ];
+        }
+
+        return [
+            'success' => true,
+            'userId' => $userId,
+            'username' => $utilisateur->getUsername(),
+            'rank' => $rankData['rank'],
+            'totalScore' => $rankData['totalScore'],
+            'gamesPlayed' => $rankData['gamesPlayed']
+        ];
+    }
 }

@@ -111,4 +111,64 @@ class UtilisateurMusiqueRepository extends ServiceEntityRepository
             ->getQuery()
             ->getOneOrNullResult();
     }
+
+    /**
+     * Récupère le classement global avec le total des scores par utilisateur
+     * Retourne : [
+     *   ['userId' => int, 'username' => string, 'totalScore' => int, 'gamesPlayed' => int],
+     *   ...
+     * ]
+     */
+    public function getGlobalRanking(): array
+    {
+        return $this->createQueryBuilder('um')
+            ->select('u.id as userId, u.username as username, SUM(um.score) as totalScore, COUNT(um.id) as gamesPlayed')
+            ->join('um.utilisateur', 'u')
+            ->groupBy('u.id')
+            ->addGroupBy('u.username') // Nécessaire car on sélectionne u.username
+            ->orderBy('totalScore', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Récupère la position d'un utilisateur dans le classement global
+     * Retourne : ['rank' => int, 'totalScore' => int, 'gamesPlayed' => int]
+     */
+    public function getUserGlobalRank(int $userId): ?array
+    {
+        // Récupérer le total de l'utilisateur
+        $userTotal = $this->createQueryBuilder('um')
+            ->select('SUM(um.score) as totalScore, COUNT(um.id) as gamesPlayed')
+            ->andWhere('um.utilisateur = :userId')
+            ->setParameter('userId', $userId)
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        if (!$userTotal || $userTotal['totalScore'] === null) {
+            return null; // L'utilisateur n'a jamais joué
+        }
+
+        $totalScore = (int) $userTotal['totalScore'];
+        $gamesPlayed = (int) $userTotal['gamesPlayed'];
+
+        // Compter combien d'utilisateurs ont un meilleur score total
+        $betterPlayers = $this->createQueryBuilder('um')
+            ->select('COUNT(DISTINCT u.id)')
+            ->join('um.utilisateur', 'u')
+            ->groupBy('u.id')
+            ->having('SUM(um.score) > :totalScore')
+            ->setParameter('totalScore', $totalScore)
+            ->getQuery()
+            ->getResult(); // ⚠️ Changé de getSingleScalarResult() à getResult()
+
+        // Compter le nombre de joueurs avec un score supérieur
+        $rank = count($betterPlayers) + 1;
+
+        return [
+            'rank' => $rank,
+            'totalScore' => $totalScore,
+            'gamesPlayed' => $gamesPlayed
+        ];
+    }
 }
