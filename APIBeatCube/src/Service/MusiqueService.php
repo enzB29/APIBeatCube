@@ -120,4 +120,9 @@ class MusiqueService
             'message' => 'Musique supprimée avec succès'
         ];
     }
+
+    public function getAllMusique() : array
+    {
+        return $this->musiqueRepository->findAll();
+    }
 }

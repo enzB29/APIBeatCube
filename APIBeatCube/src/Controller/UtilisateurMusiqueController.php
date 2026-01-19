@@ -143,12 +143,12 @@ class UtilisateurMusiqueController extends AbstractController
         }
 
         try {
-            $accuracy = $utilisateurMusiqueService->getTopFullComboByMusique($musiqueUuid, $limit);
+            $fullCombo = $utilisateurMusiqueService->getTopFullComboByMusique($musiqueUuid, $limit);
 
             return $this->json([
                 'musiqueUuid' => $musiqueUuid,
                 'limit' => $limit,
-                'scores' => $accuracy,
+                'scores' => $fullCombo,
             ]);
         } catch (\Exception $e) {
             return $this->json([

@@ -223,4 +223,16 @@ class MusiqueController extends AbstractController
             return $this->json(['error' => 'Erreur lors de la suppression', 'exception' => $e->getMessage()], 500);
         }
     }
+
+    /**
+     * @param MusiqueService $musiqueService
+     * @return Response
+     */
+    #[Route('/all-musics', methods: ['GET'])]
+    public function allMusics(MusiqueService $musiqueService): Response
+    {
+        return $this->json([
+            'allMusics' => $musiqueService->getAllMusique()
+        ]);
+    }
 }

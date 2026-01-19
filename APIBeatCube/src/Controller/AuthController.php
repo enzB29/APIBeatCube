@@ -57,6 +57,7 @@ class AuthController extends AbstractController
         $user->setUsername($username);
         $user->setEmail($email);
         $user->setPassword($passwordHasher->hashPassword($user, $password));
+        $user->setCreatedAt(new \DateTimeImmutable('now'));
 
         $em->persist($user);
         $em->flush();
@@ -64,7 +65,8 @@ class AuthController extends AbstractController
         return $this->json([
             'message' => 'User created successfully',
             'username' => $user->getUsername(),
-            'email' => $user->getEmail()
+            'email' => $user->getEmail(),
+            'createdAt' => $user->getCreatedAt()->format('Y-m-d H:i:s'),
         ], 201);
     }
 
@@ -113,6 +115,7 @@ class AuthController extends AbstractController
             'username' => $user->getUsername(),
             'email' => $user->getEmail(),
             'roles' => $user->getRoles(),
+            'createdAt' => $user->getCreatedAt()?->format('Y-m-d H:i:s'),
         ]);
 
         return $this->json([
@@ -121,7 +124,8 @@ class AuthController extends AbstractController
                 'id' => $user->getId(),
                 'username' => $user->getUsername(),
                 'email' => $user->getEmail(),
-                'roles' => $user->getRoles()
+                'roles' => $user->getRoles(),
+                'createdAt' => $user->getCreatedAt()->format('Y-m-d H:i:s'),
             ]
         ]);
     }
@@ -168,7 +172,8 @@ class AuthController extends AbstractController
         return $this->json([
             'id' => $user->getId(),
             'username' => $user->getUsername(),
-            'email' => $user->getEmail()
+            'email' => $user->getEmail(),
+            'createdAt' => $user->getCreatedAt()?->format('Y-m-d H:i:s'),
         ]);
     }
 }
