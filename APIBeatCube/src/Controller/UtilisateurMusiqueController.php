@@ -249,4 +249,17 @@ class UtilisateurMusiqueController extends AbstractController
             'averageAccuracy' => $utilisateurMusiqueService->getAverageAccuracyByUserId($userId),
         ]);
     }
+
+    /**
+     * @param int $userId
+     * @param UtilisateurMusiqueService $utilisateurMusiqueService
+     * @return JsonResponse
+     */
+    #[Route('/games/number-full-combo/{userId}', methods: ['GET'])]
+    public function NumberOfFullComboByUserId(int $userId, UtilisateurMusiqueService $utilisateurMusiqueService) : JsonResponse
+    {
+        return $this->json([
+            'nomberFullCombo' => $utilisateurMusiqueService->getNumberOfFullComboByUserId($userId),
+        ]);
+    }
 }
