@@ -2,6 +2,7 @@
 
 namespace App\Service;
 
+use App\Entity\Utilisateur;
 use App\Repository\UtilisateurRepository;
 
 class UtilisateurService
@@ -53,5 +54,10 @@ class UtilisateurService
             'newUsername' => $newUsername,
             'userId' => $userId
         ];
+    }
+
+    public function getUserById(int $userId): ?Utilisateur
+    {
+        return $this->utilisateurRepository->findOneBy(['id' => $userId]);
     }
 }
