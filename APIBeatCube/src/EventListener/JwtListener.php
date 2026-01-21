@@ -30,6 +30,10 @@ class JwtListener
             return;
         }
 
+        if (str_starts_with($path, '/api/musique/download')) {
+            return;
+        }
+
         if (!str_starts_with($path, '/api')) {
             return;
         }

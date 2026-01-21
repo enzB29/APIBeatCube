@@ -3,8 +3,6 @@
 namespace App\Controller;
 
 use App\Service\JwtService;
-use App\Service\SuccessService;
-use App\Service\UtilisateurService;
 use App\Service\UtilisateurSuccessService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;

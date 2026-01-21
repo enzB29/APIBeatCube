@@ -7,10 +7,12 @@ use App\Service\JwtService;
 use App\Service\MusiqueService;
 use App\Service\UploadService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\ResponseHeaderBag;
+
 
 #[Route('/api/musique')]
 class MusiqueController extends AbstractController
@@ -164,20 +166,31 @@ class MusiqueController extends AbstractController
     #[Route('/download/{fileId}', methods: ['GET'])]
     public function download(string $fileId): Response
     {
+        // Nettoyer TOUS les buffers de sortie
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+
         $filePath = $this->tmpDir . '/' . basename($fileId);
 
         if (!file_exists($filePath)) {
             return $this->json(['error' => 'Not found'], 404);
         }
 
-        $response = new Response(file_get_contents($filePath));
-        $response->headers->set('Content-Type', 'audio/mpeg');
-        $response->headers->set(
-            'Content-Disposition',
-            'attachment; filename="' . basename($fileId) . '"'
+        $response = new BinaryFileResponse($filePath);
+
+        // Headers essentiels pour un fichier binaire
+        $response->headers->set('Content-Type', 'audio/mpeg'); // Spécifie le type MIME
+        $response->headers->set('Content-Length', filesize($filePath)); // Taille exacte
+        $response->headers->set('Accept-Ranges', 'bytes'); // Support du streaming
+
+        $response->setContentDisposition(
+            ResponseHeaderBag::DISPOSITION_ATTACHMENT,
+            basename($fileId)
         );
 
-        unlink($filePath); // suppression du fichier dans le dossier temporaire
+        // Suppression automatique après envoi
+        $response->deleteFileAfterSend(true);
 
         return $response;
     }
