@@ -1,10 +1,18 @@
 nelmio_cors:
     defaults:
-        origin_regex: true
-        allow_origin: ['%env(CORS_ALLOW_ORIGIN)%']
+        allow_origin: ['*']
         allow_methods: ['GET', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE']
         allow_headers: ['Content-Type', 'Authorization']
-        expose_headers: ['Link']
         max_age: 3600
     paths:
-        '^/': null
+        '^/api/musique/download':
+            skip_same_as_origin: false
+            allow_origin: ['*']
+            allow_methods: ['GET']
+            allow_headers: ['Authorization']
+            # Pas de modification de la réponse binaire
+        '^/api/':
+            allow_origin: ['*']
+            allow_headers: ['*']
+            allow_methods: ['POST', 'PUT', 'GET', 'DELETE', 'PATCH', 'OPTIONS']
+            max_age: 3600

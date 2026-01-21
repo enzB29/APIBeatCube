@@ -13,6 +13,10 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/api/utilisateur')]
 class UtilisateurController extends AbstractController
 {
+    /**
+     * @param UtilisateurRepository $repo
+     * @return JsonResponse
+     */
     #[Route('/allusers', methods: ['GET'])]
     public function AllUsers(UtilisateurRepository $repo): JsonResponse
     {
@@ -34,6 +38,16 @@ class UtilisateurController extends AbstractController
         ]);
     }
 
+    /**
+     * @param int $id
+     * @param int $adminId
+     * @param Request $request
+     * @param UtilisateurRepository $userRepo
+     * @param BanService $banService
+     * @param JwtService $jwt
+     * @return JsonResponse
+     * @throws \DateMalformedStringException
+     */
     #[Route('/ban/{id}/admin/{adminId}', methods: ['POST'])]
     public function ban(int $id, int $adminId, Request $request, UtilisateurRepository $userRepo, BanService $banService, JwtService $jwt): JsonResponse {
         // Vérifier le token
@@ -82,6 +96,14 @@ class UtilisateurController extends AbstractController
         ], 201);
     }
 
+    /**
+     * @param int $id
+     * @param Request $request
+     * @param UtilisateurRepository $userRepo
+     * @param BanService $banService
+     * @param JwtService $jwt
+     * @return JsonResponse
+     */
     #[Route('/unban/{id}', methods: ['POST'])]
     public function unban(int $id, Request $request, UtilisateurRepository $userRepo, BanService $banService, JwtService $jwt): JsonResponse {
         // Vérifier le token

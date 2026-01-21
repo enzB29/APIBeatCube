@@ -90,17 +90,14 @@ class UtilisateurMusiqueService
      */
     public function getTopScoresByMusique(string $musiqueUuid, int $limit): array
     {
-        // 1️⃣ Trouver la musique via son UUID
         $musique = $this->musiqueRepository->findOneBy(['uuid' => $musiqueUuid]);
 
         if (!$musique) {
             throw new \Exception('Musique introuvable');
         }
 
-        // 2️⃣ Récupérer les meilleurs scores
         $scores = $this->utilisateurMusiqueRepository->findBestScoresByMusique($musique->getId(), $limit);
 
-        // 3️⃣ Formatter la réponse (important pour l’API)
         return array_map(function ($userMusique) {
             return [
                 'userId' => $userMusique->getUtilisateur()->getId(),
@@ -112,19 +109,22 @@ class UtilisateurMusiqueService
         }, $scores);
     }
 
+    /**
+     * @param string $musiqueUuid
+     * @param int $limit
+     * @return array
+     * @throws \Exception
+     */
     public function getTopAccuracyByMusique(string $musiqueUuid, int $limit): array
     {
-        // 1️⃣ Trouver la musique via son UUID
         $musique = $this->musiqueRepository->findOneBy(['uuid' => $musiqueUuid]);
 
         if (!$musique) {
             throw new \Exception('Musique introuvable');
         }
 
-        // 2️⃣ Récupérer les meilleurs scores
         $accuracy = $this->utilisateurMusiqueRepository->findBestAccuracyByMusique($musique->getId(), $limit);
 
-        // 3️⃣ Formatter la réponse (important pour l’API)
         return array_map(function ($userMusique) {
             return [
                 'userId' => $userMusique->getUtilisateur()->getId(),
@@ -136,19 +136,22 @@ class UtilisateurMusiqueService
         }, $accuracy);
     }
 
+    /**
+     * @param string $musiqueUuid
+     * @param int $limit
+     * @return array
+     * @throws \Exception
+     */
     public function getTopFullComboByMusique(string $musiqueUuid, int $limit): array
     {
-        // 1️⃣ Trouver la musique via son UUID
         $musique = $this->musiqueRepository->findOneBy(['uuid' => $musiqueUuid]);
 
         if (!$musique) {
             throw new \Exception('Musique introuvable');
         }
 
-        // 2️⃣ Récupérer les meilleurs scores
         $accuracy = $this->utilisateurMusiqueRepository->findBestFullComboByMusique($musique->getId(), $limit);
 
-        // 3️⃣ Formatter la réponse (important pour l’API)
         return array_map(function ($userMusique) {
             return [
                 'userId' => $userMusique->getUtilisateur()->getId(),
@@ -160,21 +163,38 @@ class UtilisateurMusiqueService
         }, $accuracy);
     }
 
+    /**
+     * @param int $userId
+     * @return array
+     */
     public function getUtilisateurMusiqueByUserId(int $userId): array
     {
         return $this->utilisateurMusiqueRepository->findBy(['utilisateur' => $userId]);
     }
 
+    /**
+     * @param int $userId
+     * @param int $limit
+     * @return array
+     */
     public function getBestScoreByUserId(int $userId, int $limit = 10): array
     {
         return $this->utilisateurMusiqueRepository->findBestScoresByUser($userId, $limit);
     }
 
+    /**
+     * @param int $userId
+     * @return array
+     */
     public function getByUserId(int $userId): array
     {
         return $this->utilisateurMusiqueRepository->findBy(['utilisateur' => $userId]);
     }
 
+    /**
+     * @param int $userId
+     * @return float
+     */
     public function getAverageAccuracyByUserId(int $userId): float
     {
         $scores = $this->utilisateurMusiqueRepository->findBy([
@@ -194,4 +214,113 @@ class UtilisateurMusiqueService
         return $totalAccuracy / count($scores);
     }
 
+    /**
+     * @param int $userId
+     * @return int
+     */
+    public function getNumberOfFullComboByUserId(int $userId): int
+    {
+        $scores = $this->utilisateurMusiqueRepository->findBy([
+            'utilisateur' => $userId
+        ]);
+
+        if (count($scores) === 0) {
+            return 0;
+        }
+
+        $totalFullCombo = 0;
+
+        foreach ($scores as $score) {
+            $totalFullCombo += $score->getFullCombo();
+        }
+
+        return $totalFullCombo;
+    }
+
+    /**
+     * @param int $userId
+     * @return int
+     */
+    public function getTotalScoreByUserId(int $userId): int
+    {
+        $scores = $this->utilisateurMusiqueRepository->findBy([
+            'utilisateur' => $userId
+        ]);
+
+        if (count($scores) === 0) {
+            return 0;
+        }
+
+        $totalScore = 0;
+
+        foreach ($scores as $score) {
+            $totalScore += $score->getScore();
+        }
+
+        return $totalScore;
+    }
+
+
+    /**
+     * Récupère le classement global de tous les utilisateurs
+     */
+    public function getGlobalLeaderboard(int $limit = 100): array
+    {
+        $ranking = $this->utilisateurMusiqueRepository->getGlobalRanking();
+
+        $leaderboard = [];
+        $position = 1;
+
+        foreach (array_slice($ranking, 0, $limit) as $entry) {
+            $leaderboard[] = [
+                'rank' => $position,
+                'userId' => (int) $entry['userId'],
+                'username' => $entry['username'],
+                'totalScore' => (int) $entry['totalScore'],
+                'gamesPlayed' => (int) $entry['gamesPlayed']
+            ];
+
+            $position++;
+        }
+
+        return $leaderboard;
+    }
+
+    /**
+     * Récupère le classement d'un utilisateur spécifique
+     */
+    public function getUserRanking(int $userId): array
+    {
+        $utilisateur = $this->utilisateurRepository->find($userId);
+
+        if (!$utilisateur) {
+            return [
+                'success' => false,
+                'error' => 'Utilisateur non trouvé'
+            ];
+        }
+
+        $rankData = $this->utilisateurMusiqueRepository->getUserGlobalRank($userId);
+
+        if (!$rankData) {
+            return [
+                'success' => true,
+                'userId' => $userId,
+                'username' => $utilisateur->getUsername(),
+                'rank' => null,
+                'totalScore' => 0,
+                'gamesPlayed' => 0,
+                'message' => 'Aucune partie jouée'
+            ];
+        }
+
+        return [
+            'success' => true,
+            'userId' => $userId,
+            'username' => $utilisateur->getUsername(),
+            'rank' => $rankData['rank'],
+            'totalScore' => $rankData['totalScore'],
+            'gamesPlayed' => $rankData['gamesPlayed']
+        ];
+    }
 }

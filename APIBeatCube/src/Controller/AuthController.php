@@ -6,6 +6,7 @@ use App\Entity\Utilisateur;
 use App\Repository\UtilisateurRepository;
 use App\Service\BanService;
 use App\Service\JwtService;
+use App\Service\UtilisateurService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -57,6 +58,7 @@ class AuthController extends AbstractController
         $user->setUsername($username);
         $user->setEmail($email);
         $user->setPassword($passwordHasher->hashPassword($user, $password));
+        $user->setCreatedAt(new \DateTimeImmutable('now'));
 
         $em->persist($user);
         $em->flush();
@@ -64,7 +66,8 @@ class AuthController extends AbstractController
         return $this->json([
             'message' => 'User created successfully',
             'username' => $user->getUsername(),
-            'email' => $user->getEmail()
+            'email' => $user->getEmail(),
+            'createdAt' => $user->getCreatedAt()->format('Y-m-d H:i:s'),
         ], 201);
     }
 
@@ -113,6 +116,7 @@ class AuthController extends AbstractController
             'username' => $user->getUsername(),
             'email' => $user->getEmail(),
             'roles' => $user->getRoles(),
+            'createdAt' => $user->getCreatedAt()?->format('Y-m-d H:i:s'),
         ]);
 
         return $this->json([
@@ -121,7 +125,8 @@ class AuthController extends AbstractController
                 'id' => $user->getId(),
                 'username' => $user->getUsername(),
                 'email' => $user->getEmail(),
-                'roles' => $user->getRoles()
+                'roles' => $user->getRoles(),
+                'createdAt' => $user->getCreatedAt()->format('Y-m-d H:i:s'),
             ]
         ]);
     }
@@ -168,7 +173,51 @@ class AuthController extends AbstractController
         return $this->json([
             'id' => $user->getId(),
             'username' => $user->getUsername(),
-            'email' => $user->getEmail()
+            'email' => $user->getEmail(),
+            'createdAt' => $user->getCreatedAt()?->format('Y-m-d H:i:s'),
         ]);
+    }
+
+    /**
+     * Mettre à jour le username
+     */
+    #[Route('/update-username', name: 'profil_update_username', methods: ['PUT', 'PATCH'])]
+    public function updateUsername(Request $request, JwtService $jwt, UtilisateurService $utilisateurService): JsonResponse
+    {
+        // Vérifier le token JWT
+        $authHeader = $request->headers->get('Authorization');
+        if (!$authHeader || !preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
+            return $this->json(['error' => 'Token manquant'], 401);
+        }
+
+        $token = $matches[1];
+        $payload = $jwt->verify($token);
+
+        if (!$payload) {
+            return $this->json(['error' => 'Token invalide'], 401);
+        }
+
+        $userId = $payload['id'];
+
+        // Récupérer les données
+        $data = json_decode($request->getContent(), true);
+        $newUsername = $data['username'] ?? null;
+
+        // Validation
+        if (!$newUsername || strlen(trim($newUsername)) < 3) {
+            return $this->json(['error' => 'Le username doit contenir au moins 3 caractères'], 400);
+        }
+
+        try {
+            $result = $utilisateurService->updateUsername($userId, trim($newUsername));
+
+            if (!$result['success']) {
+                return $this->json($result, 409);
+            }
+
+            return $this->json($result);
+        } catch (\Exception $e) {
+            return $this->json(['error' => 'Erreur lors de la mise à jour du username', 'exception' => $e->getMessage()], 500);
+        }
     }
 }

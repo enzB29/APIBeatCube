@@ -143,12 +143,12 @@ class UtilisateurMusiqueController extends AbstractController
         }
 
         try {
-            $accuracy = $utilisateurMusiqueService->getTopFullComboByMusique($musiqueUuid, $limit);
+            $fullCombo = $utilisateurMusiqueService->getTopFullComboByMusique($musiqueUuid, $limit);
 
             return $this->json([
                 'musiqueUuid' => $musiqueUuid,
                 'limit' => $limit,
-                'scores' => $accuracy,
+                'scores' => $fullCombo,
             ]);
         } catch (\Exception $e) {
             return $this->json([
@@ -248,5 +248,72 @@ class UtilisateurMusiqueController extends AbstractController
         return $this->json([
             'averageAccuracy' => $utilisateurMusiqueService->getAverageAccuracyByUserId($userId),
         ]);
+    }
+
+    /**
+     * @param int $userId
+     * @param UtilisateurMusiqueService $utilisateurMusiqueService
+     * @return JsonResponse
+     */
+    #[Route('/games/number-full-combo/{userId}', methods: ['GET'])]
+    public function NumberOfFullComboByUserId(int $userId, UtilisateurMusiqueService $utilisateurMusiqueService) : JsonResponse
+    {
+        return $this->json([
+            'nomberFullCombo' => $utilisateurMusiqueService->getNumberOfFullComboByUserId($userId),
+        ]);
+    }
+
+    /**
+     * @param int $userId
+     * @param UtilisateurMusiqueService $utilisateurMusiqueService
+     * @return JsonResponse
+     */
+    #[Route('/games/total-score/{userId}', methods: ['GET'])]
+    public function TotalScoreByUserId(int $userId, UtilisateurMusiqueService $utilisateurMusiqueService) : JsonResponse
+    {
+        return $this->json([
+            'totalScore' => $utilisateurMusiqueService->getTotalScoreByUserId($userId),
+        ]);
+    }
+
+    /**
+     * Récupère le classement global (top 100 par défaut)
+     */
+    #[Route('/leaderboard', name: 'score_leaderboard', methods: ['GET'])]
+    public function leaderboard(Request $request, UtilisateurMusiqueService $utilisateurMusiqueService): Response
+    {
+        $limit = (int) $request->query->get('limit', 100);
+        $limit = min($limit, 500); // Max 500 pour éviter surcharge
+
+        try {
+            $leaderboard = $utilisateurMusiqueService->getGlobalLeaderboard($limit);
+
+            return $this->json([
+                'success' => true,
+                'leaderboard' => $leaderboard,
+                'count' => count($leaderboard)
+            ]);
+        } catch (\Exception $e) {
+            return $this->json(['error' => 'Erreur lors de la récupération du classement', 'exception' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Récupère le classement d'un utilisateur spécifique
+     */
+    #[Route('/rank/{userId}', name: 'score_user_rank', methods: ['GET'])]
+    public function userRank(int $userId, UtilisateurMusiqueService $utilisateurMusiqueService): Response
+    {
+        try {
+            $result = $utilisateurMusiqueService->getUserRanking($userId);
+
+            if (!$result['success']) {
+                return $this->json($result, 404);
+            }
+
+            return $this->json($result);
+        } catch (\Exception $e) {
+            return $this->json(['error' => 'Erreur lors de la récupération du classement', 'exception' => $e->getMessage()], 500);
+        }
     }
 }
