@@ -1,0 +1,1322 @@
+openapi: 3.0.3
+info:
+    title: Music Game API
+    description: API for a music rhythm game with user management, scores, achievements, and leaderboards
+    version: 1.0.0
+    contact:
+        name: API Support
+
+servers:
+    - url: http://localhost:8000/api
+      description: Local development server
+    - url: https://your-domain.com/api
+      description: Production server
+
+components:
+    securitySchemes:
+        bearerAuth:
+            type: http
+            scheme: bearer
+            bearerFormat: JWT
+            description: JWT token obtained from /api/auth/login
+
+    schemas:
+        Error:
+            type: object
+            properties:
+                error:
+                    type: string
+                    example: "Error message"
+                exception:
+                    type: string
+                    example: "Detailed exception message"
+
+        User:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    example: 1
+                username:
+                    type: string
+                    example: "john_doe"
+                email:
+                    type: string
+                    format: email
+                    example: "john@example.com"
+                createdAt:
+                    type: string
+                    format: date-time
+                    example: "2024-01-15 10:30:00"
+
+        Music:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    example: 1
+                uuid:
+                    type: string
+                    format: uuid
+                    example: "550e8400-e29b-41d4-a716-446655440000"
+                name:
+                    type: string
+                    example: "Bohemian Rhapsody"
+                singer:
+                    type: string
+                    example: "Queen"
+                year:
+                    type: integer
+                    example: 1975
+
+        Success:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    example: 1
+                name:
+                    type: string
+                    example: "First Victory"
+                description:
+                    type: string
+                    example: "Complete your first song"
+
+        UserSuccess:
+            type: object
+            properties:
+                utilisateur:
+                    type: object
+                    properties:
+                        id:
+                            type: integer
+                        username:
+                            type: string
+                        email:
+                            type: string
+                success:
+                    type: object
+                    properties:
+                        id:
+                            type: integer
+                        name:
+                            type: string
+                        description:
+                            type: string
+                obtained_at:
+                    type: string
+                    format: date-time
+
+        Score:
+            type: object
+            properties:
+                musique:
+                    type: object
+                    properties:
+                        id:
+                            type: integer
+                        uuid:
+                            type: string
+                        name:
+                            type: string
+                score:
+                    type: integer
+                    example: 95000
+                accuracy:
+                    type: number
+                    format: float
+                    example: 98.5
+                fullCombo:
+                    type: integer
+                    example: 1
+                playedAt:
+                    type: string
+                    format: date-time
+                    example: "2024-01-15 10:30:00"
+
+        LeaderboardEntry:
+            type: object
+            properties:
+                rank:
+                    type: integer
+                    example: 1
+                utilisateur:
+                    type: object
+                    properties:
+                        id:
+                            type: integer
+                        username:
+                            type: string
+                totalScore:
+                    type: integer
+                    example: 1500000
+
+tags:
+    - name: Authentication
+      description: User authentication and profile management
+    - name: Users
+      description: User management operations
+    - name: Music
+      description: Music upload and management
+    - name: Scores
+      description: Score tracking and leaderboards
+    - name: Achievements
+      description: User achievements and successes
+
+paths:
+    /auth/signin:
+        post:
+            tags:
+                - Authentication
+            summary: Create a new user account
+            description: Register a new user with username, email and password
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required:
+                                - username
+                                - email
+                                - password
+                            properties:
+                                username:
+                                    type: string
+                                    example: "john_doe"
+                                email:
+                                    type: string
+                                    format: email
+                                    example: "john@example.com"
+                                password:
+                                    type: string
+                                    format: password
+                                    example: "SecurePass123"
+            responses:
+                '201':
+                    description: User created successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                                        example: "User created successfully"
+                                    username:
+                                        type: string
+                                    email:
+                                        type: string
+                                    createdAt:
+                                        type: string
+                                        format: date-time
+                '400':
+                    description: Invalid input or validation error
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '409':
+                    description: Username or email already exists
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+
+    /auth/login:
+        post:
+            tags:
+                - Authentication
+            summary: Login to the application
+            description: Authenticate with username/email and password to receive a JWT token
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required:
+                                - identifier
+                                - password
+                            properties:
+                                identifier:
+                                    type: string
+                                    description: Username or email
+                                    example: "john_doe"
+                                password:
+                                    type: string
+                                    format: password
+                                    example: "SecurePass123"
+            responses:
+                '200':
+                    description: Login successful
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    token:
+                                        type: string
+                                        example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                                    user:
+                                        $ref: '#/components/schemas/User'
+                '400':
+                    description: Missing credentials
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '401':
+                    description: Invalid credentials
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '403':
+                    description: Account is banned
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    error:
+                                        type: string
+                                        example: "Compte banni"
+                                    reason:
+                                        type: string
+                                    bannedUntil:
+                                        type: string
+                                        format: date-time
+
+    /auth/logout:
+        post:
+            tags:
+                - Authentication
+            summary: Logout from the application
+            description: Logout the current user (client-side token removal)
+            security:
+                - bearerAuth: []
+            responses:
+                '200':
+                    description: Logout successful
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                                        example: "Logged out successfully"
+
+    /auth/me:
+        get:
+            tags:
+                - Authentication
+            summary: Get current user information
+            description: Retrieve the profile of the authenticated user
+            security:
+                - bearerAuth: []
+            responses:
+                '200':
+                    description: User information retrieved
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/User'
+                '401':
+                    description: Unauthorized - Invalid or missing token
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '404':
+                    description: User not found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+
+    /auth/update-username:
+        put:
+            tags:
+                - Authentication
+            summary: Update username
+            description: Update the username of the authenticated user
+            security:
+                - bearerAuth: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required:
+                                - username
+                            properties:
+                                username:
+                                    type: string
+                                    minLength: 3
+                                    example: "new_username"
+            responses:
+                '200':
+                    description: Username updated successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    success:
+                                        type: boolean
+                                    message:
+                                        type: string
+                '400':
+                    description: Invalid username (too short)
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '401':
+                    description: Unauthorized
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '409':
+                    description: Username already taken
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+
+    /utilisateur/allusers:
+        get:
+            tags:
+                - Users
+            summary: Get all users
+            description: Retrieve a list of all registered users
+            responses:
+                '200':
+                    description: List of users retrieved successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    count:
+                                        type: integer
+                                        example: 42
+                                    users:
+                                        type: array
+                                        items:
+                                            type: object
+                                            properties:
+                                                id:
+                                                    type: integer
+                                                username:
+                                                    type: string
+                                                email:
+                                                    type: string
+
+    /utilisateur/ban/{id}/admin/{adminId}:
+        post:
+            tags:
+                - Users
+            summary: Ban a user
+            description: Ban a user (admin only)
+            security:
+                - bearerAuth: []
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  description: ID of the user to ban
+                  schema:
+                      type: integer
+                - name: adminId
+                  in: path
+                  required: true
+                  description: ID of the admin performing the ban
+                  schema:
+                      type: integer
+            requestBody:
+                required: false
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                reason:
+                                    type: string
+                                    example: "Violation des règles"
+                                days:
+                                    type: integer
+                                    description: Number of days for the ban (null for permanent)
+                                    example: 7
+            responses:
+                '201':
+                    description: User banned successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                                    userId:
+                                        type: integer
+                                    bannedUntil:
+                                        type: string
+                                        format: date-time
+                                    bannedReason:
+                                        type: string
+                                    bannedBy:
+                                        type: string
+                '401':
+                    description: Unauthorized
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '403':
+                    description: Forbidden - Admin role required
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '404':
+                    description: User not found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+
+    /utilisateur/unban/{id}:
+        post:
+            tags:
+                - Users
+            summary: Unban a user
+            description: Remove a ban from a user (admin only)
+            security:
+                - bearerAuth: []
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  description: ID of the user to unban
+                  schema:
+                      type: integer
+            responses:
+                '200':
+                    description: User unbanned successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                                        example: "Ban levé"
+                                    userId:
+                                        type: integer
+                '401':
+                    description: Unauthorized
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '403':
+                    description: Forbidden - Admin role required
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '404':
+                    description: User not found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+
+    /musique/upload:
+        post:
+            tags:
+                - Music
+            summary: Upload a music file
+            description: Upload an MP3 file with metadata
+            security:
+                - bearerAuth: []
+            requestBody:
+                required: true
+                content:
+                    multipart/form-data:
+                        schema:
+                            type: object
+                            required:
+                                - file
+                                - name
+                                - singer
+                                - year
+                            properties:
+                                file:
+                                    type: string
+                                    format: binary
+                                    description: MP3 file to upload
+                                name:
+                                    type: string
+                                    example: "Bohemian Rhapsody"
+                                singer:
+                                    type: string
+                                    example: "Queen"
+                                year:
+                                    type: integer
+                                    example: 1975
+            responses:
+                '200':
+                    description: Music uploaded successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    success:
+                                        type: boolean
+                                    message:
+                                        type: string
+                                    musique:
+                                        $ref: '#/components/schemas/Music'
+                '400':
+                    description: Invalid input or file format
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '401':
+                    description: Unauthorized
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+
+    /musique/admin/uploadBy/{userId}:
+        get:
+            tags:
+                - Music
+            summary: Get uploads by user (admin)
+            description: Get all music uploads from a specific user (admin only)
+            security:
+                - bearerAuth: []
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                      type: integer
+            responses:
+                '200':
+                    description: Uploads retrieved successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    uploads:
+                                        type: array
+                                        items:
+                                            type: object
+                                            properties:
+                                                musique:
+                                                    $ref: '#/components/schemas/Music'
+                                                utilisateur:
+                                                    $ref: '#/components/schemas/User'
+                                                uploadAt:
+                                                    type: string
+                                                    format: date-time
+                '401':
+                    description: Unauthorized
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '403':
+                    description: Forbidden - Admin role required
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+
+    /musique/my-uploads:
+        get:
+            tags:
+                - Music
+            summary: Get my uploads
+            description: Get all music uploads from the authenticated user
+            security:
+                - bearerAuth: []
+            responses:
+                '200':
+                    description: Uploads retrieved successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    uploads:
+                                        type: array
+                                        items:
+                                            type: object
+                                            properties:
+                                                musique:
+                                                    type: object
+                                                    properties:
+                                                        id:
+                                                            type: integer
+                                                        uuid:
+                                                            type: string
+                                                        name:
+                                                            type: string
+                                                        singer:
+                                                            type: string
+                                                uploadAt:
+                                                    type: string
+                                                    format: date-time
+                '401':
+                    description: Unauthorized
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+
+    /musique/download/{fileId}:
+        get:
+            tags:
+                - Music
+            summary: Download a music file
+            description: Download an MP3 file by its ID
+            parameters:
+                - name: fileId
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                '200':
+                    description: File downloaded successfully
+                    content:
+                        audio/mpeg:
+                            schema:
+                                type: string
+                                format: binary
+                '404':
+                    description: File not found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+
+    /musique/delete/{identifier}:
+        delete:
+            tags:
+                - Music
+            summary: Delete a music file
+            description: Delete a music file by ID or UUID (admin only)
+            security:
+                - bearerAuth: []
+            parameters:
+                - name: identifier
+                  in: path
+                  required: true
+                  description: Music ID or UUID
+                  schema:
+                      type: string
+            responses:
+                '200':
+                    description: Music deleted successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    success:
+                                        type: boolean
+                                    message:
+                                        type: string
+                '401':
+                    description: Unauthorized
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '403':
+                    description: Forbidden - Admin role required
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '404':
+                    description: Music not found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+
+    /musique/all-musics:
+        get:
+            tags:
+                - Music
+            summary: Get all music
+            description: Retrieve a list of all available music
+            responses:
+                '200':
+                    description: Music list retrieved successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    allMusics:
+                                        type: array
+                                        items:
+                                            $ref: '#/components/schemas/Music'
+
+    /score/save:
+        post:
+            tags:
+                - Scores
+            summary: Save a score
+            description: Save a game score for the authenticated user
+            security:
+                - bearerAuth: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required:
+                                - musiqueUuid
+                                - score
+                                - accuracy
+                                - fullCombo
+                            properties:
+                                musiqueUuid:
+                                    type: string
+                                    format: uuid
+                                    example: "550e8400-e29b-41d4-a716-446655440000"
+                                score:
+                                    type: integer
+                                    minimum: 0
+                                    example: 95000
+                                accuracy:
+                                    type: number
+                                    format: float
+                                    minimum: 0
+                                    maximum: 100
+                                    example: 98.5
+                                fullCombo:
+                                    type: integer
+                                    minimum: 0
+                                    example: 1
+            responses:
+                '201':
+                    description: Score saved successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    success:
+                                        type: boolean
+                                    message:
+                                        type: string
+                '400':
+                    description: Invalid input
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '401':
+                    description: Unauthorized
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '404':
+                    description: Music not found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+
+    /score/top/{musiqueUuid}/{limit}:
+        get:
+            tags:
+                - Scores
+            summary: Get top scores for a music
+            description: Retrieve the top N scores for a specific music
+            parameters:
+                - name: musiqueUuid
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+                      format: uuid
+                - name: limit
+                  in: path
+                  required: true
+                  schema:
+                      type: integer
+                      minimum: 1
+            responses:
+                '200':
+                    description: Top scores retrieved successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    musiqueUuid:
+                                        type: string
+                                    limit:
+                                        type: integer
+                                    scores:
+                                        type: array
+                                        items:
+                                            $ref: '#/components/schemas/Score'
+                '400':
+                    description: Invalid limit
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+
+    /accuracy/top/{musiqueUuid}/{limit}:
+        get:
+            tags:
+                - Scores
+            summary: Get top accuracy for a music
+            description: Retrieve the top N accuracy scores for a specific music
+            parameters:
+                - name: musiqueUuid
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+                      format: uuid
+                - name: limit
+                  in: path
+                  required: true
+                  schema:
+                      type: integer
+                      minimum: 1
+            responses:
+                '200':
+                    description: Top accuracy retrieved successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    musiqueUuid:
+                                        type: string
+                                    limit:
+                                        type: integer
+                                    scores:
+                                        type: array
+                                        items:
+                                            $ref: '#/components/schemas/Score'
+                '400':
+                    description: Invalid limit
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+
+    /full-combo/top/{musiqueUuid}/{limit}:
+        get:
+            tags:
+                - Scores
+            summary: Get top full combos for a music
+            description: Retrieve the top N full combo scores for a specific music
+            parameters:
+                - name: musiqueUuid
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+                      format: uuid
+                - name: limit
+                  in: path
+                  required: true
+                  schema:
+                      type: integer
+                      minimum: 1
+            responses:
+                '200':
+                    description: Top full combos retrieved successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    musiqueUuid:
+                                        type: string
+                                    limit:
+                                        type: integer
+                                    scores:
+                                        type: array
+                                        items:
+                                            $ref: '#/components/schemas/Score'
+                '400':
+                    description: Invalid limit
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+
+    /score/{userId}:
+        get:
+            tags:
+                - Scores
+            summary: Get scores by user
+            description: Retrieve all scores for a specific user
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                      type: integer
+            responses:
+                '200':
+                    description: Scores retrieved successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    scores:
+                                        type: array
+                                        items:
+                                            $ref: '#/components/schemas/Score'
+                '404':
+                    description: User has no games
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+
+    /games/number-of-games/{userId}:
+        get:
+            tags:
+                - Scores
+            summary: Get number of games played
+            description: Get the total number of games played by a user
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                      type: integer
+            responses:
+                '200':
+                    description: Number of games retrieved
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    numberOfGame:
+                                        type: integer
+                                        example: 42
+
+    /games/best-scores/{userId}:
+        get:
+            tags:
+                - Scores
+            summary: Get best scores by user
+            description: Get the best score for each music played by a user
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                      type: integer
+            responses:
+                '200':
+                    description: Best scores retrieved successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    scores:
+                                        type: array
+                                        items:
+                                            type: object
+                                            properties:
+                                                musique:
+                                                    $ref: '#/components/schemas/Music'
+                                                utilisateur:
+                                                    $ref: '#/components/schemas/User'
+                                                score:
+                                                    type: integer
+                                                playedAt:
+                                                    type: string
+                                                    format: date-time
+
+    /games/average-accuracy/{userId}:
+        get:
+            tags:
+                - Scores
+            summary: Get average accuracy
+            description: Get the average accuracy for a user across all games
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                      type: integer
+            responses:
+                '200':
+                    description: Average accuracy retrieved
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    averageAccuracy:
+                                        type: number
+                                        format: float
+                                        example: 95.8
+
+    /games/number-full-combo/{userId}:
+        get:
+            tags:
+                - Scores
+            summary: Get number of full combos
+            description: Get the total number of full combos achieved by a user
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                      type: integer
+            responses:
+                '200':
+                    description: Number of full combos retrieved
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    nomberFullCombo:
+                                        type: integer
+                                        example: 5
+
+    /games/total-score/{userId}:
+        get:
+            tags:
+                - Scores
+            summary: Get total score
+            description: Get the total cumulative score for a user
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                      type: integer
+            responses:
+                '200':
+                    description: Total score retrieved
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    totalScore:
+                                        type: integer
+                                        example: 1500000
+
+    /leaderboard:
+        get:
+            tags:
+                - Scores
+            summary: Get global leaderboard
+            description: Retrieve the global leaderboard with top players
+            parameters:
+                - name: limit
+                  in: query
+                  required: false
+                  schema:
+                      type: integer
+                      default: 100
+                      maximum: 500
+                  description: Maximum number of entries (default 100, max 500)
+            responses:
+                '200':
+                    description: Leaderboard retrieved successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    success:
+                                        type: boolean
+                                    leaderboard:
+                                        type: array
+                                        items:
+                                            $ref: '#/components/schemas/LeaderboardEntry'
+                                    count:
+                                        type: integer
+                '500':
+                    description: Server error
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+
+    /rank/{userId}:
+        get:
+            tags:
+                - Scores
+            summary: Get user rank
+            description: Get the global ranking position of a specific user
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                      type: integer
+            responses:
+                '200':
+                    description: User rank retrieved successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    success:
+                                        type: boolean
+                                    rank:
+                                        type: integer
+                                    totalScore:
+                                        type: integer
+                '404':
+                    description: User not found or has no scores
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+
+    /all-successes:
+        get:
+            tags:
+                - Achievements
+            summary: Get all achievements
+            description: Retrieve a list of all available achievements
+            responses:
+                '200':
+                    description: Achievements retrieved successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    successes:
+                                        type: array
+                                        items:
+                                            $ref: '#/components/schemas/Success'
+
+    /user/success/{userId}:
+        get:
+            tags:
+                - Achievements
+            summary: Get user achievements
+            description: Get all achievements obtained by a specific user
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                      type: integer
+            responses:
+                '200':
+                    description: User achievements retrieved successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    successes:
+                                        type: array
+                                        items:
+                                            $ref: '#/components/schemas/UserSuccess'
+
+    /success/{successId}:
+        get:
+            tags:
+                - Achievements
+            summary: Get users by achievement
+            description: Get all users who have obtained a specific achievement
+            parameters:
+                - name: successId
+                  in: path
+                  required: true
+                  schema:
+                      type: integer
+            responses:
+                '200':
+                    description: Users retrieved successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    successes:
+                                        type: array
+                                        items:
+                                            $ref: '#/components/schemas/UserSuccess'
+
+    /success/save/{successId}:
+        post:
+            tags:
+                - Achievements
+            summary: Save an achievement
+            description: Award an achievement to the authenticated user
+            security:
+                - bearerAuth: []
+            parameters:
+                - name: successId
+                  in: path
+                  required: true
+                  schema:
+                      type: integer
+            responses:
+                '201':
+                    description: Achievement saved successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    success:
+                                        type: boolean
+                                    message:
+                                        type: string
+                '401':
+                    description: Unauthorized
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '404':
+                    description: User or achievement not found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '409':
+                    description: Achievement already obtained
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
