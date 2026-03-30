@@ -122,7 +122,7 @@ class MusiqueController extends AbstractController
         ]);
     }
 
-    #[Route('/my-uploads', name: 'music_uploadBy_UserId', methods: ['GET'])]
+    #[Route('/my-uploads', name: 'music_MyUpload', methods: ['GET'])]
     public function MyUploads(Request $request, UploadService $uploadService, JwtService $jwt): Response
     {
         // Vérifier le token
