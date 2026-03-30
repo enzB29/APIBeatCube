@@ -15,20 +15,23 @@ class UtilisateurController extends AbstractController
 {
     /**
      * @param UtilisateurRepository $repo
+     * @param BanService $banService
      * @return JsonResponse
      */
     #[Route('/allusers', methods: ['GET'])]
-    public function AllUsers(UtilisateurRepository $repo): JsonResponse
+    public function AllUsers(UtilisateurRepository $repo, BanService $banService): JsonResponse
     {
         $users = $repo->findAll();
 
         $userToReturn = [];
 
         foreach ($users as $user) {
+            $banned = $banService->isUserBanned($user);
             $userToReturn[] = [
                 'id' => $user->getId(),
                 'username' => $user->getUsername(),
                 'email' => $user->getEmail(),
+                'isBanned' => $banned,
             ];
         }
 
