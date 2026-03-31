@@ -37,9 +37,15 @@ class BanService
      * @param Utilisateur $user
      * @param string $reason
      * @param \DateTimeImmutable|null $bannedUntil
+     * @param Utilisateur $admin
      * @return void
      */
-    public function banUser(Utilisateur $user, string $reason, ?\DateTimeImmutable $bannedUntil = null, Utilisateur $admin): void {
+    public function banUser(
+        Utilisateur $user,
+        string $reason,
+        Utilisateur $admin,
+        ?\DateTimeImmutable $bannedUntil = null
+    ): void {
         // règle métier possible :
         // - empêcher double ban actif
         if ($this->banRepository->findActiveBan($user)) {

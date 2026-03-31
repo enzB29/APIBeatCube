@@ -1,0 +1,222 @@
+name: CI — Tests
+
+on:
+  pull_request:
+    branches:
+      - "**"
+  push:
+    branches:
+      - main
+      - develop
+
+jobs:
+  tests:
+    name: PHPUnit Tests (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: true
+      matrix:
+        php: ["8.2", "8.3"]
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: app_test
+          MYSQL_USER: app
+          MYSQL_PASSWORD: app
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      APP_ENV: test
+      DATABASE_URL: "mysql://app:app@127.0.0.1:3306/app_test?serverVersion=8.0"
+      JWT_SECRET: "test_secret_key_for_ci_only"
+
+    steps:
+      # -----------------------------------------------------------------------
+      # 1. Checkout
+      # -----------------------------------------------------------------------
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # -----------------------------------------------------------------------
+      # 2. Setup PHP
+      # -----------------------------------------------------------------------
+      - name: Setup PHP ${{ matrix.php }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: intl, pdo_mysql, mbstring, xml, ctype, iconv, zip
+          coverage: xdebug
+          tools: composer:v2
+
+      # -----------------------------------------------------------------------
+      # 3. Cache Composer dependencies
+      # -----------------------------------------------------------------------
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-php${{ matrix.php }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php${{ matrix.php }}-composer-
+
+      # -----------------------------------------------------------------------
+      # 4. Install dependencies
+      # -----------------------------------------------------------------------
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction --optimize-autoloader
+
+      # -----------------------------------------------------------------------
+      # 5. Copy and configure .env.test
+      # -----------------------------------------------------------------------
+      - name: Setup test environment file
+        run: |
+          cp .env .env.test.local 2>/dev/null || true
+          echo "APP_ENV=test" >> .env.test.local
+          echo "DATABASE_URL=mysql://app:app@127.0.0.1:3306/app_test?serverVersion=8.0" >> .env.test.local
+          echo "JWT_SECRET=test_secret_key_for_ci_only" >> .env.test.local
+
+      # -----------------------------------------------------------------------
+      # 6. Wait for MySQL to be fully ready
+      # -----------------------------------------------------------------------
+      - name: Wait for MySQL
+        run: |
+          for i in {1..30}; do
+            mysqladmin ping -h 127.0.0.1 -u root -proot --silent && break
+            echo "Waiting for MySQL... ($i/30)"
+            sleep 2
+          done
+
+      # -----------------------------------------------------------------------
+      # 7. Create database and run migrations
+      # -----------------------------------------------------------------------
+      - name: Create test database
+        run: php bin/console doctrine:database:create --env=test --if-not-exists
+
+      - name: Run migrations
+        run: php bin/console doctrine:migrations:migrate --env=test --no-interaction
+
+      # -----------------------------------------------------------------------
+      # 8. Clear cache
+      # -----------------------------------------------------------------------
+      - name: Clear Symfony cache
+        run: php bin/console cache:clear --env=test
+
+      # -----------------------------------------------------------------------
+      # 9. Run PHPUnit tests
+      # -----------------------------------------------------------------------
+      - name: Run PHPUnit tests
+        run: |
+          php bin/phpunit \
+            --testdox \
+            --coverage-text \
+            --coverage-clover=coverage.xml \
+            --log-junit=junit.xml
+        env:
+          XDEBUG_MODE: coverage
+
+      # -----------------------------------------------------------------------
+      # 10. Upload test results (always, even on failure)
+      # -----------------------------------------------------------------------
+      - name: Upload JUnit test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: junit-results-php${{ matrix.php }}
+          path: junit.xml
+          retention-days: 7
+
+      # -----------------------------------------------------------------------
+      # 11. Upload coverage report
+      # -----------------------------------------------------------------------
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: coverage-php${{ matrix.php }}
+          path: coverage.xml
+          retention-days: 7
+
+      # -----------------------------------------------------------------------
+      # 12. Annotate PR with test results
+      # -----------------------------------------------------------------------
+      - name: Annotate PR with test results
+        uses: mikepenz/action-junit-report@v4
+        if: always() && github.event_name == 'pull_request'
+        with:
+          report_paths: junit.xml
+          check_name: "Test Results (PHP ${{ matrix.php }})"
+          fail_on_failure: true
+
+  # ---------------------------------------------------------------------------
+  # Code quality checks (runs in parallel with tests)
+  # ---------------------------------------------------------------------------
+  code-quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          tools: composer:v2, cs2pr
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-quality-composer-${{ hashFiles('**/composer.lock') }}
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Check Symfony requirements
+        run: composer symfony:check-platform-reqs 2>/dev/null || true
+
+      - name: PHP syntax check
+        run: find src tests -name "*.php" -print0 | xargs -0 -P4 php -l
+
+  # ---------------------------------------------------------------------------
+  # Security audit
+  # ---------------------------------------------------------------------------
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Run security audit
+        run: composer audit --no-interaction
+        continue-on-error: false
