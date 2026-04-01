@@ -88,7 +88,7 @@ class UtilisateurController extends AbstractController
             ? (new \DateTimeImmutable())->modify("+$days days")
             : null;
 
-        $banService->banUser($user, $reason, $bannedUntil, $admin);
+        $banService->banUser($user, $reason, $admin, $bannedUntil);
 
         return $this->json([
             'message' => 'Utilisateur banni',

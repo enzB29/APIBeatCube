@@ -106,11 +106,43 @@
       <path value="$PROJECT_DIR$/APIBeatCube/vendor/symfony/web-link" />
       <path value="$PROJECT_DIR$/APIBeatCube/vendor/symfony/var-exporter" />
       <path value="$PROJECT_DIR$/APIBeatCube/vendor/symfony/var-dumper" />
+      <path value="$PROJECT_DIR$/APIBeatCube/vendor/staabm/side-effects-detector" />
+      <path value="$PROJECT_DIR$/APIBeatCube/vendor/sebastian/comparator" />
+      <path value="$PROJECT_DIR$/APIBeatCube/vendor/sebastian/complexity" />
+      <path value="$PROJECT_DIR$/APIBeatCube/vendor/sebastian/diff" />
+      <path value="$PROJECT_DIR$/APIBeatCube/vendor/sebastian/environment" />
+      <path value="$PROJECT_DIR$/APIBeatCube/vendor/sebastian/cli-parser" />
+      <path value="$PROJECT_DIR$/APIBeatCube/vendor/sebastian/object-reflector" />
+      <path value="$PROJECT_DIR$/APIBeatCube/vendor/sebastian/recursion-context" />
+      <path value="$PROJECT_DIR$/APIBeatCube/vendor/sebastian/type" />
+      <path value="$PROJECT_DIR$/APIBeatCube/vendor/sebastian/version" />
+      <path value="$PROJECT_DIR$/APIBeatCube/vendor/sebastian/exporter" />
+      <path value="$PROJECT_DIR$/APIBeatCube/vendor/sebastian/global-state" />
+      <path value="$PROJECT_DIR$/APIBeatCube/vendor/sebastian/lines-of-code" />
+      <path value="$PROJECT_DIR$/APIBeatCube/vendor/sebastian/object-enumerator" />
+      <path value="$PROJECT_DIR$/APIBeatCube/vendor/phar-io/manifest" />
+      <path value="$PROJECT_DIR$/APIBeatCube/vendor/phar-io/version" />
+      <path value="$PROJECT_DIR$/APIBeatCube/vendor/myclabs/deep-copy" />
+      <path value="$PROJECT_DIR$/APIBeatCube/vendor/theseer/tokenizer" />
+      <path value="$PROJECT_DIR$/APIBeatCube/vendor/phpunit/php-invoker" />
+      <path value="$PROJECT_DIR$/APIBeatCube/vendor/phpunit/php-text-template" />
+      <path value="$PROJECT_DIR$/APIBeatCube/vendor/phpunit/php-timer" />
+      <path value="$PROJECT_DIR$/APIBeatCube/vendor/phpunit/phpunit" />
+      <path value="$PROJECT_DIR$/APIBeatCube/vendor/phpunit/php-code-coverage" />
+      <path value="$PROJECT_DIR$/APIBeatCube/vendor/phpunit/php-file-iterator" />
+      <path value="$PROJECT_DIR$/APIBeatCube/vendor/symfony/css-selector" />
+      <path value="$PROJECT_DIR$/APIBeatCube/vendor/symfony/browser-kit" />
+      <path value="$PROJECT_DIR$/APIBeatCube/vendor/symfony/dom-crawler" />
     </include_path>
   </component>
   <component name="PhpProjectSharedConfiguration" php_language_level="8.4" />
   <component name="PhpStanOptionsConfiguration">
     <option name="transferred" value="true" />
+  </component>
+  <component name="PhpUnit">
+    <phpunit_settings>
+      <PhpUnitSettings configuration_file_path="$PROJECT_DIR$/APIBeatCube/phpunit.xml" custom_loader_path="$PROJECT_DIR$/APIBeatCube/vendor/autoload.php" use_configuration_file="true" />
+    </phpunit_settings>
   </component>
   <component name="PsalmOptionsConfiguration">
     <option name="transferred" value="true" />
