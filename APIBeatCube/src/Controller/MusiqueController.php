@@ -169,6 +169,7 @@ class MusiqueController extends AbstractController
         }
 
         return $this->json([
+            'userId'        => $id,
             'uploads' => $result,
             'debug'   => $debug, // retire ça une fois le bug trouvé
         ]);
