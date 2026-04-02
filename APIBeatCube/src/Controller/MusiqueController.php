@@ -141,11 +141,13 @@ class MusiqueController extends AbstractController
         $uploads = $uploadService->getUploadsByUserId($id);
 
         $result = [];
+        $debug = []; // temporaire
 
         foreach ($uploads as $um) {
             $musique = $um->getMusique();
 
             if (!$musique) {
+                $debug[] = 'musique null pour upload id=' . $um->getId();
                 continue;
             }
 
@@ -168,6 +170,7 @@ class MusiqueController extends AbstractController
 
         return $this->json([
             'uploads' => $result,
+            'debug'   => $debug, // retire ça une fois le bug trouvé
         ]);
     }
 
