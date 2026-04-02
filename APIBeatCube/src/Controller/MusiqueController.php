@@ -150,7 +150,7 @@ class MusiqueController extends AbstractController
             }
 
             // Vérifier que le fichier existe encore dans /var/tmp_music
-            $filePath = '/var/tmp_music/' . $musique->getUuid();
+            $filePath = '/var/tmp_music/' . $musique->getUuid() . '.mp3';
             if (!file_exists($filePath)) {
                 continue;
             }
