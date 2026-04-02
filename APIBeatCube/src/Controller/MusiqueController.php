@@ -141,27 +141,16 @@ class MusiqueController extends AbstractController
         $uploads = $uploadService->getUploadsByUserId($id);
 
         $result = [];
-        $debug = []; // temporaire
 
         foreach ($uploads as $um) {
             $musique = $um->getMusique();
 
             if (!$musique) {
-                $debug[] = 'musique null pour upload id=' . $um->getId();
                 continue;
             }
 
             // Vérifier que le fichier existe encore dans /var/tmp_music
             $filePath = $this->getParameter('kernel.project_dir') . '/var/tmp_music/' . $musique->getUuid() . '.mp3';
-
-            // Debug : on log TOUT avant le file_exists
-            $debug[] = [
-                'uuid'      => $musique->getUuid(),
-                'filePath'  => $filePath,
-                'exists'    => file_exists($filePath),
-                'scandir'   => scandir('/var/tmp_music/'),
-            ];
-
 
             if (!file_exists($filePath)) {
                 continue;
@@ -179,9 +168,7 @@ class MusiqueController extends AbstractController
         }
 
         return $this->json([
-            'userId'        => $id,
             'uploads' => $result,
-            'debug'   => $debug, // retire ça une fois le bug trouvé
         ]);
     }
 
