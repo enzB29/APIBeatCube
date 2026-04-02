@@ -125,7 +125,6 @@ class MusiqueController extends AbstractController
     #[Route('/my-uploads', name: 'music_MyUpload', methods: ['GET'])]
     public function MyUploads(Request $request, UploadService $uploadService, JwtService $jwt): Response
     {
-        // Vérifier le token
         $authHeader = $request->headers->get('Authorization');
         if (!$authHeader || !preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
             return $this->json(['error' => 'Token manquant'], 401);
@@ -139,20 +138,33 @@ class MusiqueController extends AbstractController
         }
 
         $id = $payload['id'];
-
         $uploads = $uploadService->getUploadsByUserId($id);
 
-        $result = array_map(function ($um) {
-            return [
+        $result = [];
+
+        foreach ($uploads as $um) {
+            $musique = $um->getMusique();
+
+            if (!$musique) {
+                continue;
+            }
+
+            // Vérifier que le fichier existe encore dans /var/tmp_music
+            $filePath = '/var/tmp_music/' . $musique->getUuid();
+            if (!file_exists($filePath)) {
+                continue;
+            }
+
+            $result[] = [
                 'musique' => [
-                    'id' => $um->getMusique()->getId(),
-                    'uuid' => $um->getMusique()->getUuid(),
-                    'name' => $um->getMusique()->getName(),
-                    'singer' => $um->getMusique()->getSinger(),
+                    'id'     => $musique->getId(),
+                    'uuid'   => $musique->getUuid(),
+                    'name'   => $musique->getName(),
+                    'singer' => $musique->getSinger(),
                 ],
                 'uploadAt' => $um->getUploadAt()?->format('Y-m-d H:i:s'),
             ];
-        }, $uploads);
+        }
 
         return $this->json([
             'uploads' => $result,
