@@ -152,7 +152,7 @@ class MusiqueController extends AbstractController
             }
 
             // Vérifier que le fichier existe encore dans /var/tmp_music
-            $filePath = '/var/tmp_music/' . $musique->getUuid() . '.mp3';
+            $filePath = $this->getParameter('kernel.project_dir') . '/var/tmp_music/' . $musique->getUuid() . '.mp3';
 
             // Debug : on log TOUT avant le file_exists
             $debug[] = [
@@ -162,7 +162,7 @@ class MusiqueController extends AbstractController
                 'scandir'   => scandir('/var/tmp_music/'),
             ];
 
-            
+
             if (!file_exists($filePath)) {
                 continue;
             }
