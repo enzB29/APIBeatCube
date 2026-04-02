@@ -25,6 +25,10 @@ class UploadService
 
     public function getUploadsByUserId(int $userId): array
     {
-        return $this->uploadRepository->findBy(['utilisateur' => $userId]);
+        return $this->uploadRepository->createQueryBuilder('u')
+            ->where('u.utilisateur = :userId')
+            ->setParameter('userId', $userId)
+            ->getQuery()
+            ->getResult();
     }
 }
